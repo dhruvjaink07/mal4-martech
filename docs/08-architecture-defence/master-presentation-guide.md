@@ -2,14 +2,60 @@
 ### Pitching the One-Pager, HLD, LLD, and ADRs (2-Speaker Team Rehearsal Guide)
 
 > **Hackathon Track:** Mobile Architecture Lab 4 (MAL4) &bull; MarTech Campaign Review & Approval  
-> **Presentation Window:** 10-minute presentation + 5-minute technical jury cross-examination  
 > **Team Division:**  
 > * **Speaker 1 (Domain & Solution Architect):** Business problem framing, regulatory liabilities, One-Pager pitch, HLD system context, modular decomposition, and boundary governance.  
 > * **Speaker 2 (Principal Technical Architect):** LLD domain contracts, state machine invariants, dual-check concurrency control, atomic transactions, ADR trade-off defense, and ADR-006 reconciliation.
 
 ---
 
-## 1. Ten-Minute Presentation Flow & Time Allocation
+## ⚡ 0. EMERGENCY EXPRESS PITCH (< 5 MINUTES TOTAL)
+
+> **Target:** 3 minutes 30 seconds total + open for Q&A.  
+> **Delivery Rule:** High energy, brisk pace, speak to the business stakes and architectural guarantees.
+
+### ⏱️ 0:00 – 0:45 | Problem & The One-Pager (Speaker 1)
+> *"Judges, enterprise campaigns involve millions in ad spend and severe regulatory liabilities under GDPR, CAN-SPAM, and SOX 404. Today, reviews happen over Slack and spreadsheets, leading to the most dangerous failure in MarTech: **post-approval drift**—where Version 1 is approved, but someone modifies copy or budget, and an unreviewed Version 2 goes live.*  
+> *We built a deterministic platform where an approval is permanently bound to an immutable snapshot:*  
+> $$\text{Draft} \xrightarrow{\text{Submit}} \text{Pending Review} \xrightarrow{\text{Review}} \{\text{Approved}, \text{Changes Requested}, \text{Rejected}\} \xrightarrow{\text{Revise}} \text{Re-Submit} \xrightarrow{\text{Gate}} \text{Scheduled}$$  
+> *No campaign can ever clear the scheduling gate unless its current digest matches the exact version approved."*
+
+### ⏱️ 0:45 – 01:45 | High-Level Design (HLD) (Speaker 1)
+> *"For our architecture, we made deliberate, principled choices:*  
+> 1. ***Modular Monolith, Not Microservices:** At our scale (50 users, 200 campaigns, 2-person team), microservices introduce network latency and distributed transaction failures that threaten state consistency. We chose a Feature-First Modular Monolith.*  
+> 2. ***Clean-Architecture-Lite:** Our Domain layer has **zero outward dependencies**—it imports neither Flutter nor SQLite. Every business rule is unit-testable in under 50ms.*  
+> 3. ***Honest Security Boundary:** On our local-first mobile prototype, RBAC and Separation of Duties are enforced in the Application and Domain layers—never just the UI. We openly acknowledge that this does not provide server-side protection against decompiled binary tampering, but our repository and auth interfaces form the exact seam where a backend API slots in for production."*
+
+### ⏱️ 01:45 – 02:45 | Low-Level Design (LLD) (Speaker 2)
+> *"In the LLD, the `Campaign` aggregate root strictly enforces three critical invariants:*  
+> 1. ***Separation of Duties (Anti-Self-Approval):** If a campaign author attempts to review their own submission, the domain aborts with `SelfReviewError`.*  
+> 2. ***Dual-Check Concurrency:** Reviewers take hours to evaluate creative assets, so pessimistic locking is unusable. We use Optimistic Concurrency Control with two checks: a **Domain Staleness Check** to ensure the reviewer's viewed version is still current, and a **Repository Token Check** (`save(campaign, expectedVersion)`) to reject race-condition overwrites with `409 Conflict`.*  
+> 3. ***Material Change Invalidation:** If an approved campaign has a budget shift $\ge \pm 10\%$, reach shift $> 15\%$, or date shift $> 72$ hours, existing approvals are revoked, version bumps to $vN+1$, and it re-enters review.*  
+> 4. ***Atomic Persistence:** State transitions and audit entries commit in the **exact same transaction**—state and audit records can never desynchronize."*
+
+### ⏱️ 02:45 – 03:30 | ADRs & ADR-006 Reconciliation (Speaker 2)
+> *"Every choice has a formal ADR with rejected alternatives:*  
+> * *We chose **immutable full snapshots** over event diffs because $O(1)$ point-in-time verification eliminates projection lag.*  
+> * *We chose **in-process events emitted strictly post-commit**, ensuring notification outages never roll back durable transactions.*  
+> * *Most importantly, look at **ADR-006**: During documentation, we found our requirements evolved to specify a 3-stage sequential pipeline with a backend, while our Solution Design assumed single-approval local-first.*  
+> *Instead of quietly hiding this, we documented it as an explicit conflict with three resolution paths. In our defense, we present **Option C**: our delivered mobile prototype validates all governance mechanics on-device, while the relational schema and outbox specifications serve as our documented Enterprise Target Architecture."*
+
+### ⏱️ 03:30 – 03:45 | Hand-off to Jury Q&A (Both)
+> *"We delivered a production-grade architecture that is provably correct, completely honest about its boundaries, and backed by a full suite of HLD, LLD, and ADR deliverables. We're ready for your questions."*
+
+---
+
+## 🛡️ Top 3 Instant Judge Answers (10-Second Snipers)
+
+1. **"Why no microservices?"**  
+   &rarr; *"Microservices solve organizational scaling across 50 teams and divergent deployment schedules. For 2 engineers and 50 users, it adds distributed transaction risk that destroys state consistency. Modular Monolith gives us boundary isolation with zero network overhead."*
+2. **"How do you prevent post-approval drift?"**  
+   &rarr; *"Approvals bind to the immutable snapshot version integer, not a mutable boolean flag. At the scheduling gate, we mathematically verify `campaign.currentVersion == approval.versionReviewed`. Any edit increments the version and fails the gate."*
+3. **"Why is ADR-006 unresolved?"**  
+   &rarr; *"Intellectual honesty. Bad teams silently rewrite documents to pretend they matched. We made the divergence visible, presented Options A, B, and C, and chose Option C: an MVP prototype proving the domain invariants on device, and target architecture documented in the schema."*
+
+---
+
+## 1. Full 10-Minute Presentation Flow & Time Allocation
 
 ```
 00:00 - 02:00 (2.0 min) | Part 1: The One-Pager — Problem, Regulatory Stakes & Core Flow (Speaker 1)
@@ -104,7 +150,7 @@
 > *"Every architectural choice was evaluated against competing alternatives and documented in our ADRs:*  
 > * * **ADR-001 (Architecture Style):** Modular Monolith + Clean-lite. We traded DTO ring-mapper ceremony for speed while preserving domain isolation.*  
 > * * **ADR-002 (Data Consistency & Concurrency):** Full immutable snapshots + OCC. We accepted small storage overhead for $O(1)$ point-in-time audit verification without event-sourcing replay lag.*  
-> * * **ADR-003 (Event Processing):** In-process domain events emitted strictly post-commit, ensuring notification outages cannot roll back durable transactions.*  
+> * * **ADR-003 (Event Processing):** In-process domain events emitted strictly post-commit, ensuring notification outages never roll back durable transactions.*  
 > * * **ADR-004 (Authorization Boundary):** On-device RBAC with honest stated security boundaries.*  
 > * * **ADR-005 (Persistence Strategy):** Drift over SQLite local-first persistence, delivering zero-network offline reliability."*
 
@@ -129,40 +175,9 @@
 
 ---
 
-## 3. Top 6 Jury Cross-Examination Defense Playbook
-
-### Q1: "Why a Modular Monolith? Isn't Microservices the enterprise standard?"
-* **Response (Speaker 1):**  
-  *"Microservices solve organizational scaling bottlenecks—enabling 50 independent teams to deploy on separate cadences—and divergent infrastructure scaling needs. Neither applies to a 2-person team building for 50 concurrent users. Introducing microservices would force distributed sagas, 2PC coordinators, and network partitioning risks that directly threaten our primary goal: strict transactional consistency. Our Modular Monolith delivers clean domain boundaries without distributed complexity."*
-
-### Q2: "You have no backend server. Isn't on-device authorization insecure?"
-* **Response (Speaker 2):**  
-  *"Yes, against a malicious user tampering with a decompiled binary—which we disclosed plainly in ADR-004. However, we did not leave enforcement in the UI: our RBAC and Separation of Duties are hard-coded in the Application and Domain layers. An attacker cannot bypass checks merely by manipulating Flutter widgets or deep links. Crucially, our `AuthProvider` and `CampaignRepository` interfaces form the exact seam where an enterprise OIDC Identity Provider and API gateway slot in for production without touching domain code."*
-
-### Q3: "How do you mathematically prevent post-approval drift?"
-* **Response (Speaker 2):**  
-  *"Through three structural mechanisms:*  
-  1. *Snapshots are immutable. When v1 is submitted, its canonical content is locked.*  
-  2. *The `ApprovalRecord` does not set a boolean flag on the campaign row; it binds immutably to `versionReviewed`.*  
-  3. *At the Scheduling Gate, the domain re-verifies that `campaign.currentVersion == approval.versionReviewed`. If any edit occurred, the version was bumped to v2, causing the scheduling gate to immediately abort with `VersionMismatchError`."*
-
-### Q4: "Why use full immutable snapshots instead of event-sourced delta diffs?"
-* **Response (Speaker 1):**  
-  *"Event-sourcing diffs save storage, but require replaying projection streams to reconstruct state. If projection lag occurs or a mobile client experiences intermittent connectivity, you risk 'reconstruction drift' where reviewers evaluate slightly different state than what was submitted. Full immutable snapshots are $O(1)$ queryable, permanently verifiable, and the payload size of a campaign metadata record is under 50KB—storage is cheap; audit correctness is priceless."*
-
-### Q5: "What happens if two reviewers submit decisions at the exact same split-second?"
-* **Response (Speaker 2):**  
-  *"Our Optimistic Concurrency Control handles this deterministically. Both reviewers load version 1. Reviewer A’s write arrives first; the repository checks `expectedVersion == 1`, commits, and increments the stored version to 2. Reviewer B’s write arrives an instant later with `expectedVersion == 1`; the repository detects `storedVersion == 2`, rejects the write immediately, and throws `ConflictFailure(409)`. Reviewer B is notified to reload and inspect the updated state. We never allow silent overwrites."*
-
-### Q6: "Why did ADR-006 remain 'Proposed / Unresolved' in your ADR index?"
-* **Response (Speaker 1):**  
-  *"Because intellectual honesty is an architectural virtue. When requirements evolve faster than the solution design, bad engineering teams quietly rewrite documents to pretend they always matched. We treated the divergence as a first-class architectural event. Recording ADR-006 made the conflict visible and quantified three clear paths forward. In our defense, we stand firmly on Option C: the delivered prototype validates the governance rules on device, while the schema documents the enterprise target state."*
-
----
-
 ### Reference Architecture Deliverables Index
 * **Executive 1-Pager Brief:** [`assets/diagrams/MAL4_MarTech_One_Page_Solution_Brief.pdf`](file:///Users/phodeco/Tech/study/mal4-martech-campaign-arch/assets/diagrams/MAL4_MarTech_One_Page_Solution_Brief.pdf)
 * **High-Level Design (HLD):** [`docs/09-architecture-deliverables/MAL4-HLD.pdf`](file:///Users/phodeco/Tech/study/mal4-martech-campaign-arch/docs/09-architecture-deliverables/MAL4-HLD.pdf)
 * **Low-Level Design (LLD):** [`docs/09-architecture-deliverables/MAL4-LLD.pdf`](file:///Users/phodeco/Tech/study/mal4-martech-campaign-arch/docs/09-architecture-deliverables/MAL4-LLD.pdf)
-* **Architecture Decision Records (ADR):** [`docs/09-architecture-deliverables/MAL4-ADR.pdf`](file:///Users/phodeco/Tech/study/mal4-martech-campaign-arch/docs/09-architecture-deliverables/MAL4-ADR.pdf)
+* **ADR Deliverable (Red/Green/Black):** [`docs/09-architecture-deliverables/MAL4-ADR.pdf`](file:///Users/phodeco/Tech/study/mal4-martech-campaign-arch/docs/09-architecture-deliverables/MAL4-ADR.pdf)
 * **Jury Question Bank:** [`docs/08-architecture-defence/anticipated-questions.md`](file:///Users/phodeco/Tech/study/mal4-martech-campaign-arch/docs/08-architecture-defence/anticipated-questions.md)
