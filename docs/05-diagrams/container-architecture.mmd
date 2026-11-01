@@ -1,5 +1,43 @@
-%% Container Architecture Diagram
-%% C4 Level 2 – Containers
+%% Component Architecture Diagram
+%% C4 Level 2 - Components within the single Flutter application process
+%% Traces to: docs/02-solution-design/HLD/component-architecture.md
 
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
 graph TD
-    %% TODO: Add containers, databases, message brokers
+    subgraph App["Flutter Application Process (single device - see Deployment Diagram)"]
+        AuthMod["Authentication & Authorization"]
+        CampaignMgmt["Campaign Management"]
+        VersionMgmt["Campaign Version Management"]
+        ReviewMod["Review & Approval Workflow<br/>(merged module)"]
+        AuditMod["Audit Management"]
+        NotifyMod["Notification Management"]
+        SchedMod["Scheduling"]
+        DB[("Local Drift / SQLite Database")]
+    end
+
+    IdP["Identity Provider<br/>(external, not implemented)"]
+    Notify["Notification Service<br/>(external, not implemented)"]
+
+    CampaignMgmt --> VersionMgmt
+    CampaignMgmt --> AuthMod
+    ReviewMod --> VersionMgmt
+    ReviewMod --> AuthMod
+    ReviewMod --> AuditMod
+    SchedMod --> VersionMgmt
+    SchedMod --> AuditMod
+    CampaignMgmt --> AuditMod
+
+    CampaignMgmt --> DB
+    VersionMgmt --> DB
+    ReviewMod --> DB
+    AuditMod --> DB
+
+    ReviewMod --> NotifyMod
+    CampaignMgmt --> NotifyMod
+
+    AuthMod -.->|adapter boundary| IdP
+    NotifyMod -.->|adapter boundary| Notify
+
+    classDef external fill:#eee,stroke:#999,color:#333;
+    class IdP,Notify external;
+    style App fill:#f7f9fb,stroke:#0b2340,stroke-width:1px

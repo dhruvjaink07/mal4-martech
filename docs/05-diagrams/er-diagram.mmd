@@ -1,0 +1,41 @@
+%% Database ER Diagram - CONCEPTUAL / DOMAIN-LEVEL ONLY
+%% This is NOT the physical schema. Physical tables, columns, and indexes are defined
+%% separately in the project's data-design documentation. This diagram shows only the
+%% entity relationships established in the Low-Level Design's domain model.
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
+erDiagram
+    CAMPAIGN ||--|{ CAMPAIGN_VERSION : "has versions"
+    CAMPAIGN_VERSION ||--o| APPROVAL_RECORD : "may be reviewed by"
+    CAMPAIGN ||--|{ AUDIT_ENTRY : "produces"
+    CAMPAIGN_VERSION ||--o{ AUDIT_ENTRY : "referenced by"
+
+    CAMPAIGN {
+        string id PK
+        string state
+        int current_version
+        string submitter_id
+    }
+    CAMPAIGN_VERSION {
+        int version_number PK
+        string campaign_id FK
+        string name
+        string objective
+        double budget
+        datetime created_at
+    }
+    APPROVAL_RECORD {
+        string reviewer_id
+        int version_reviewed FK
+        string decision
+        string feedback
+        string superseded_by_reason
+    }
+    AUDIT_ENTRY {
+        string event_id PK
+        string campaign_id FK
+        int version FK
+        string actor_id
+        string action
+        datetime timestamp_utc
+    }

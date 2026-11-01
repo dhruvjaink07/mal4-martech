@@ -1,5 +1,30 @@
 %% System Context Diagram
-%% C4 Level 1 – System Context
+%% C4 Level 1 - Campaign Review & Approval System
+%% Traces to: docs/02-solution-design/HLD/system-context.md
 
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
 graph TD
-    %% TODO: Add actors and external systems
+    Marketer["Marketer<br/>(ST-001)"]
+    Reviewer["Reviewer<br/>(ST-002)"]
+    Admin["System Administrator<br/>(ST-003)"]
+
+    System["Campaign Review & Approval System<br/>(this architecture's boundary)"]
+
+    IdP["Identity Provider<br/>(external, not implemented)"]
+    Notify["Notification Service<br/>(external, not implemented)"]
+    Sched["Scheduling System<br/>(external, out of scope)"]
+    Assets["Asset / Content Storage<br/>(external, out of scope)"]
+    Analytics["Analytics / Reporting<br/>(external, out of scope)"]
+
+    Marketer -->|creates, submits, revises campaigns| System
+    Reviewer -->|approves, rejects, requests changes| System
+    Admin -->|configures roles & workflow| System
+
+    System -->|authenticate / role claims| IdP
+    System -->|lifecycle notifications, best-effort| Notify
+    System -->|hands off approved campaigns| Sched
+    System -.->|content references only, A-004| Assets
+    System -.->|acknowledged at boundary only| Analytics
+
+    classDef external fill:#eee,stroke:#999,color:#333;
+    class IdP,Notify,Sched,Assets,Analytics external;

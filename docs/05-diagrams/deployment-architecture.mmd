@@ -1,4 +1,27 @@
-%% Deployment Architecture Diagram
+%% Deployment Diagram
+%% Traces to: docs/02-solution-design/HLD/deployment-architecture.md
+%% IMPORTANT: no backend process exists for the MAL4 deliverable - dashed nodes are
+%% architectural seams (interfaces), not implemented/deployed infrastructure.
 
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
 graph TD
-    %% TODO: Add infrastructure nodes and deployment topology
+    subgraph Device["Mobile Device (single, on-device - what actually runs)"]
+        FlutterApp["Flutter Application Process<br/>(Presentation + Application + Domain + Infrastructure)"]
+        LocalDB[("Local SQLite file<br/>(via Drift, WAL mode)")]
+        FlutterApp --> LocalDB
+    end
+
+    AuthSeam["AuthProvider -> Identity Provider<br/>(interface only, not deployed)"]
+    NotifySeam["NotificationGateway -> Notification Service<br/>(interface only, not deployed)"]
+    SchedSeam["Scheduling System hand-off<br/>(out of scope, not deployed)"]
+
+    FlutterApp -.->|"seam exists; no live implementation"| AuthSeam
+    FlutterApp -.->|"seam exists; no live implementation"| NotifySeam
+    FlutterApp -.->|"out of scope"| SchedSeam
+
+    classDef notdeployed fill:#fff,stroke:#999,stroke-dasharray: 5 5,color:#666;
+    class AuthSeam,NotifySeam,SchedSeam notdeployed;
+    style Device fill:#f7f9fb,stroke:#0b2340,stroke-width:1px
+
+    Note["NFR-008/009 describe server-side enforcement.<br/>This deployment has no server;<br/>see Security Architecture for the stated limitation."]
+    Note -.-> FlutterApp

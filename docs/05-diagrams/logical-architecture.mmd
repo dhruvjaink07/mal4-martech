@@ -1,0 +1,44 @@
+%% Logical Architecture Diagram
+%% Dependency direction: Presentation -> Application -> Domain <- Infrastructure
+%% Traces to: docs/02-solution-design/HLD/logical-architecture.md
+%% Note: logical layers only - no implementation-technology logos.
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
+graph TD
+    subgraph Presentation["Presentation Layer"]
+        UI["Screens / Widgets<br/>(MVVM view)"]
+        VM["State Notifiers<br/>(MVVM view-model)"]
+    end
+
+    subgraph Application["Application Layer"]
+        UC["Use Cases<br/>(CreateCampaign, SubmitCampaign,<br/>ReviewCampaign, ScheduleCampaign, ...)"]
+        Ports["Ports<br/>(repository & adapter interfaces,<br/>owned here)"]
+    end
+
+    subgraph Domain["Domain Layer (zero outward dependencies)"]
+        Agg["Campaign Aggregate<br/>+ CampaignVersion, ApprovalRecord, AuditEntry"]
+    end
+
+    subgraph Infrastructure["Infrastructure Layer"]
+        Repo["Repository Implementations<br/>(persistence)"]
+        AuthImpl["AuthProvider Implementation"]
+        NotifyImpl["NotificationGateway Implementation"]
+    end
+
+    UI --> VM
+    VM -->|issues commands| UC
+    UC -->|delegates state transitions to| Agg
+    UC -->|calls via Ports| Ports
+    Repo -.->|implements| Ports
+    AuthImpl -.->|implements| Ports
+    NotifyImpl -.->|implements| Ports
+    Repo --> Agg
+    Agg -.->|zero dependency on| Infrastructure
+    Agg -.->|zero dependency on| Presentation
+
+    classDef domain fill:#fdf1dc,stroke:#a8711a,color:#5c3d0a;
+    class Agg domain;
+    style Presentation fill:#f7f9fb,stroke:#0b2340,stroke-width:1px
+    style Application fill:#f7f9fb,stroke:#0b2340,stroke-width:1px
+    style Domain fill:#fffaf0,stroke:#a8711a,stroke-width:1.5px
+    style Infrastructure fill:#f7f9fb,stroke:#0b2340,stroke-width:1px
