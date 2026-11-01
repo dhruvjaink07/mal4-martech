@@ -1,0 +1,322 @@
+```mermaid
+flowchart TD
+    %% =========================================================================
+    %% MAL4 MarTech Platform: Campaign Review & Approval User Journey Flow
+    %% Standard: Mermaid Flowchart with Actor-based Swimlanes
+    %% Traceability: FR-001 through FR-019 | NFR-001 through NFR-017
+    %% Decision Architecture: Multi-Level Sequential Pipeline & Material Invalidation
+    %% =========================================================================
+
+    %% -------------------------------------------------------------------------
+    %% SWIMLANE 1: MARKETER (Campaign Creator)
+    %% -------------------------------------------------------------------------
+    subgraph MarketerLane ["Marketer (Campaign Creator - ST-001)"]
+        M_Start(["Start: New Campaign Idea"])
+        M_Define["Define Proposal Details<br/>(Name, Objectives, Audience, Budget, Dates, Assets)"]
+        M_DraftState["Campaign in DRAFT State<br/>(Working Copy v1)"]
+        M_EditDraft["Edit Campaign Details"]
+        M_Submit["Action: Submit Campaign for Review (FR-004)"]
+        M_ValError["Inspect Validation Errors on Mobile UI<br/>(Missing Fields / Invalid Constraints)"]
+        M_ViewFeedback["Inspect Stage Reviewer Feedback (FR-011)<br/>(State: CHANGES REQUESTED)"]
+        M_Revise["Revise Proposal Content / Budget / Audience (FR-010)<br/>(Creates Working Copy vN+1)"]
+        M_Resubmit["Action: Re-submit Revised Proposal (FR-010)"]
+        M_ViewRejection["Inspect Rejection Reason (FR-008)<br/>(State: REJECTED)"]
+        M_RestartChoice{"Restart as New Draft<br/>or Abandon?"}
+        M_Abandon(["Campaign Lifecycle Terminated"])
+        M_ViewApproved["Inspect Fully Approved Campaign Badge<br/>(State: APPROVED - All 3 Stages Cleared)"]
+        M_ReqSchedule["Action: Request Campaign Scheduling (FR-012)"]
+        M_MaterialWarning["Warning: Material Modifications Trigger<br/>Approval Invalidation & Pipeline Reset (FR-014)"]
+        M_SchedSuccess(["Campaign SCHEDULED<br/>Ready for Execution Gate"])
+    end
+
+    %% -------------------------------------------------------------------------
+    %% SWIMLANE 2: MOBILE APP & CAMPAIGN PLATFORM BACKEND
+    %% -------------------------------------------------------------------------
+    subgraph SystemLane ["Mobile App & Campaign Platform (System)"]
+        %% Validation Gate
+        S_Validate{"Are mandatory fields valid?<br/>(Name, Audience, Budget, Dates)<br/>(FR-001, FR-004)"}
+        S_ReturnValErr["Reject Submission: Return Field Errors (400)"]
+
+        %% Snapshot & Submission
+        S_CreateSnapshot["Generate Immutable Snapshot vN (FR-013)<br/>(SHA-256 Digest & Locked Payload)"]
+        S_TransPendingStage1["Atomically Transition State to:<br/>PENDING REVIEW [Stage 1: Creative]"]
+        S_AuditSubmit["Record Submission to Immutable Audit Log (FR-015)"]
+        S_TriggerNotifyStage1["Enqueue Async Outbox: Stage1ReviewRequiredEvent"]
+
+        %% Pre-Execution Guards at each Stage
+        S_CheckAuth{"Is user authorized for this Stage?<br/>(ST-002a/b/c) (FR-017, NFR-009)"}
+        S_ErrAuth["403 Forbidden: Missing Role for Stage"]
+
+        S_CheckSelfReview{"Is reviewer the campaign creator?<br/>(FR-018, NFR-010)"}
+        S_ErrSelfReview["403 Forbidden: Self-Review Disallowed<br/>(Anti-Self-Approval Enforcement)"]
+
+        S_CheckStale{"Is reviewed version still current?<br/>(Optimistic Lock: version & stage)<br/>(NFR-001, NFR-003)"}
+        S_ErrStale["409 Conflict: Concurrent Update / Stale Version"]
+
+        S_CheckDup{"Duplicate decision request?<br/>(Idempotency Key Check)<br/>(NFR-004)"}
+        S_ReturnIdemp["Return Cached Success Result<br/>(No State Mutation)"]
+
+        %% Sequential Stage Advancement Handlers
+        S_AdvanceStage2["Atomically Record Stage 1 Approval<br/>Transition to PENDING REVIEW [Stage 2: Compliance]<br/>Log Stage 1 Passed (FR-007)"]
+        S_TriggerNotifyStage2["Enqueue Async Outbox: Stage2ReviewRequiredEvent"]
+
+        S_AdvanceStage3["Atomically Record Stage 2 Approval<br/>Transition to PENDING REVIEW [Stage 3: Finance]<br/>Log Stage 2 Passed (FR-007)"]
+        S_TriggerNotifyStage3["Enqueue Async Outbox: Stage3ReviewRequiredEvent"]
+
+        S_TransApproved["Atomically Record Stage 3 Approval<br/>Transition State to APPROVED (FR-007)<br/>(All 3 Stage Signatures Cryptographically Bound)"]
+        S_TriggerNotifyApproved["Enqueue Async Outbox: CampaignApprovedEvent"]
+
+        %% Rejection & Changes Requested Handlers
+        S_TransChanges["Atomically Transition State to CHANGES REQUESTED<br/>(Store Specific Stage Feedback Linked to vN) (FR-009)"]
+        S_TransRejected["Atomically Transition State to REJECTED<br/>(Store Rejection Reason Linked to vN) (FR-008)"]
+        S_AuditDecision["Record Stage Decision to Immutable Audit Log (FR-015)"]
+        S_TriggerNotifyDecision["Enqueue Async Outbox: CampaignFeedbackEvent"]
+
+        %% Scheduling Gate & Material Invalidation
+        S_CheckApprovedState{"Is campaign in APPROVED state?<br/>(FR-012)"}
+        S_ErrNotApproved["Reject: Campaign must be Approved before Scheduling"]
+
+        S_CheckVerMatch{"Does current payload match approved snapshot?<br/>(Material Change Evaluation)<br/>(FR-014, NFR-002)"}
+        S_InvalidateApproval["Invalidate Approval Sign-offs (FR-014)<br/>Transition State to CHANGES REQUESTED / DRAFT<br/>Emit ApprovalRevokedEvent & Reset Pipeline"]
+        S_TransScheduled["Atomically Transition State to SCHEDULED (FR-012)"]
+        S_AuditSchedule["Record Scheduling to Immutable Audit Log (FR-015)"]
+        S_TriggerNotifySched["Enqueue Async Outbox: CampaignScheduledEvent"]
+    end
+
+    %% -------------------------------------------------------------------------
+    %% SWIMLANE 3: MULTI-LEVEL REVIEWERS (Sequential Gates)
+    %% -------------------------------------------------------------------------
+    subgraph ReviewerLane ["Multi-Level Reviewers (Sequential Domain Gates)"]
+        %% Stage 1: Creative
+        R_Stage1Queue["Stage 1 Queue: Creative & Brand Reviewer (ST-002a)"]
+        R_Stage1Eval["Inspect Snapshot vN<br/>(Verify Tone, Visual Assets, Audience Alignment)"]
+        R_Stage1Decision{"Stage 1 Decision Gate<br/>(FR-006)"}
+        R_Stage1Changes["Submit Request for Changes<br/>(Mandatory Creative Notes)"]
+        R_Stage1Reject["Submit Rejection<br/>(Mandatory Brand Justification)"]
+        R_Stage1Approve["Submit Stage 1 Approval<br/>(Creative Clearance Granted)"]
+
+        %% Stage 2: Compliance
+        R_Stage2Queue["Stage 2 Queue: Legal & Compliance Officer (ST-002b)"]
+        R_Stage2Eval["Inspect Snapshot vN<br/>(Audit GDPR Consent, CAN-SPAM, Disclaimers, Claims)"]
+        R_Stage2Decision{"Stage 2 Decision Gate<br/>(FR-006)"}
+        R_Stage2Changes["Submit Request for Changes<br/>(Mandatory Legal Redlines)"]
+        R_Stage2Reject["Submit Rejection<br/>(Regulatory Non-Compliance)"]
+        R_Stage2Approve["Submit Stage 2 Approval<br/>(Legal Clearance Granted)"]
+
+        %% Stage 3: Finance
+        R_Stage3Queue["Stage 3 Queue: Finance & Budget Approver (ST-002c)"]
+        R_Stage3Eval["Inspect Snapshot vN<br/>(Verify Spend Caps, Cost Centers, DOA Limits)"]
+        R_Stage3Decision{"Stage 3 Decision Gate<br/>(FR-006, FR-007)"}
+        R_Stage3Changes["Submit Request for Changes<br/>(Budget Modification Required)"]
+        R_Stage3Reject["Submit Rejection<br/>(Budget Denied)"]
+        R_Stage3Approve["Submit Final Approval<br/>(SOX 404 Financial Sign-off Granted)"]
+    end
+
+    %% -------------------------------------------------------------------------
+    %% SWIMLANE 4: EXTERNAL NOTIFICATION SERVICE (Decoupled Side-Effects)
+    %% -------------------------------------------------------------------------
+    subgraph NotifyLane ["External Notification Service (Async Side-Effects)"]
+        N_SendStage1["Dispatch Push & Email to Creative Reviewers"]
+        N_SendStage2["Dispatch Push & Email to Legal/Compliance Officers"]
+        N_SendStage3["Dispatch Push & Email to Finance Approvers"]
+        N_SendDecision["Dispatch Push Alert & Feedback to Marketer"]
+        N_SendSched["Dispatch Confirmation to Marketer & Delivery Adapters"]
+        N_DeliveryCheck{"Notification delivery<br/>successful? (NFR-005)"}
+        N_DeliveryOk["Delivery Confirmed"]
+        N_DeliveryRetry["Log Warning & Enqueue Exponential Retry<br/>(Core Transaction NOT Rolled Back)"]
+    end
+
+    %% =========================================================================
+    %% RELATIONSHIPS & PROCESS TRANSITIONS
+    %% =========================================================================
+
+    %% Phase 1: Creation & Submission
+    M_Start --> M_Define
+    M_Define --> M_DraftState
+    M_DraftState --> M_EditDraft
+    M_EditDraft --> M_DraftState
+    M_DraftState --> M_Submit
+    M_Submit --> S_Validate
+
+    %% Validation Decision
+    S_Validate -- "No (Missing fields)" --> S_ReturnValErr
+    S_ReturnValErr --> M_ValError
+    M_ValError --> M_EditDraft
+
+    S_Validate -- "Yes (Valid)" --> S_CreateSnapshot
+    S_CreateSnapshot --> S_TransPendingStage1
+    S_TransPendingStage1 --> S_AuditSubmit
+    S_AuditSubmit --> S_TriggerNotifyStage1
+    S_TriggerNotifyStage1 -.-> N_SendStage1
+
+    %% Stage 1 Queue Routing
+    N_SendStage1 --> N_DeliveryCheck
+    N_DeliveryCheck -- "Success" --> N_DeliveryOk
+    N_DeliveryCheck -- "Network Failure" --> N_DeliveryRetry
+    N_DeliveryOk -.-> R_Stage1Queue
+    N_DeliveryRetry -. "Eventual Pull" .-> R_Stage1Queue
+
+    %% Stage 1 Guards & Decision Execution
+    R_Stage1Queue --> R_Stage1Eval
+    R_Stage1Eval --> S_CheckAuth
+    S_CheckAuth -- "No" --> S_ErrAuth
+    S_CheckAuth -- "Yes" --> S_CheckSelfReview
+    S_CheckSelfReview -- "Yes (Violates SoD)" --> S_ErrSelfReview
+    S_CheckSelfReview -- "No" --> S_CheckStale
+    S_CheckStale -- "No (Stale Version)" --> S_ErrStale
+    S_CheckStale -- "Yes (Current)" --> S_CheckDup
+    S_CheckDup -- "Yes (Duplicate)" --> S_ReturnIdemp
+    S_CheckDup -- "No (New Request)" --> R_Stage1Decision
+
+    R_Stage1Decision -- "Changes Needed" --> R_Stage1Changes
+    R_Stage1Decision -- "Brand Unsuitable" --> R_Stage1Reject
+    R_Stage1Decision -- "Creative Passed" --> R_Stage1Approve
+
+    R_Stage1Changes --> S_TransChanges
+    R_Stage1Reject --> S_TransRejected
+    R_Stage1Approve --> S_AdvanceStage2
+
+    %% Stage 1 Pass -> Stage 2 Routing
+    S_AdvanceStage2 --> S_TriggerNotifyStage2
+    S_TriggerNotifyStage2 -.-> N_SendStage2
+    N_SendStage2 -.-> R_Stage2Queue
+
+    %% Stage 2 Guards & Decision Execution
+    R_Stage2Queue --> R_Stage2Eval
+    R_Stage2Eval --> R_Stage2Decision
+
+    R_Stage2Decision -- "Legal Redlines" --> R_Stage2Changes
+    R_Stage2Decision -- "Compliance Failure" --> R_Stage2Reject
+    R_Stage2Decision -- "Legal Cleared" --> R_Stage2Approve
+
+    R_Stage2Changes --> S_TransChanges
+    R_Stage2Reject --> S_TransRejected
+    R_Stage2Approve --> S_AdvanceStage3
+
+    %% Stage 2 Pass -> Stage 3 Routing
+    S_AdvanceStage3 --> S_TriggerNotifyStage3
+    S_TriggerNotifyStage3 -.-> N_SendStage3
+    N_SendStage3 -.-> R_Stage3Queue
+
+    %% Stage 3 Guards & Decision Execution
+    R_Stage3Queue --> R_Stage3Eval
+    R_Stage3Eval --> R_Stage3Decision
+
+    R_Stage3Decision -- "Budget Adjust Needed" --> R_Stage3Changes
+    R_Stage3Decision -- "Budget Denied" --> R_Stage3Reject
+    R_Stage3Decision -- "SOX Sign-off" --> R_Stage3Approve
+
+    R_Stage3Changes --> S_TransChanges
+    R_Stage3Reject --> S_TransRejected
+    R_Stage3Approve --> S_TransApproved
+
+    %% Decision Side-Effects & Notifications
+    S_TransChanges --> S_AuditDecision
+    S_TransRejected --> S_AuditDecision
+    S_TransApproved --> S_TriggerNotifyApproved
+
+    S_AuditDecision --> S_TriggerNotifyDecision
+    S_TriggerNotifyDecision -.-> N_SendDecision
+    S_TriggerNotifyApproved -.-> N_SendDecision
+
+    %% Phase 4: Feedback, Revision Loop, & Rejection Handling
+    N_SendDecision -.-> M_ViewFeedback
+    N_SendDecision -.-> M_ViewRejection
+    N_SendDecision -.-> M_ViewApproved
+
+    %% Revision Loop
+    M_ViewFeedback --> M_Revise
+    M_Revise --> M_Resubmit
+    M_Resubmit --> S_Validate
+
+    %% Rejection Paths
+    M_ViewRejection --> M_RestartChoice
+    M_RestartChoice -- "Abandon" --> M_Abandon
+    M_RestartChoice -- "Restart Cycle" --> M_DraftState
+
+    %% Phase 5: Post-Approval Modification & Scheduling Gate
+    M_ViewApproved --> M_ReqSchedule
+    M_ViewApproved -. "Marketer edits proposal" .-> M_MaterialWarning
+    M_MaterialWarning --> S_InvalidateApproval
+
+    M_ReqSchedule --> S_CheckApprovedState
+    S_CheckApprovedState -- "No" --> S_ErrNotApproved
+    S_CheckApprovedState -- "Yes" --> S_CheckVerMatch
+
+    S_CheckVerMatch -- "Mismatch (Material Change)" --> S_InvalidateApproval
+    S_InvalidateApproval --> M_ViewFeedback
+
+    S_CheckVerMatch -- "Match (All Signatures Valid)" --> S_TransScheduled
+    S_TransScheduled --> S_AuditSchedule
+    S_AuditSchedule --> S_TriggerNotifySched
+    S_TriggerNotifySched -.-> N_SendSched
+    N_SendSched -.-> M_SchedSuccess
+```
+
+---
+
+## Campaign User Journey Flow Explanation
+
+### 1. Overview & Purpose
+
+This user journey flow diagram models the complete operational lifecycle of a marketing campaign proposal within the **MAL4 MarTech Campaign Review & Approval Platform**. 
+
+Rather than illustrating internal software infrastructure, this diagram models the **human-to-system business workflow** across four distinct functional lanes:
+1. **Marketer (Campaign Creator - `ST-001`):** Originates proposals, manages drafts, incorporates reviewer feedback, executes revisions, and triggers final campaign scheduling.
+2. **Campaign Platform (Mobile App & Backend System):** Enforces data validation, deterministic state transitions, immutable snapshotting, role-based access control, separation of duties, optimistic concurrency control, and audit trail append operations.
+3. **Multi-Level Reviewers (Sequential Domain Gatekeepers):** 
+   - **`ST-002a: Creative & Brand Reviewer` (Stage 1 Gatekeeper):** Evaluates brand voice, messaging, and visual assets.
+   - **`ST-002b: Legal & Compliance Officer` (Stage 2 Gatekeeper):** Audits regulatory disclosures, GDPR/CAN-SPAM consent, and advertising claims.
+   - **`ST-002c: Finance & Budget Approver` (Stage 3 Gatekeeper):** Authorizes spend commitments under SOX 404 and delegation-of-authority limits.
+4. **External Notification Service:** Manages asynchronous alerting across mobile push and email channels as decoupled side-effects that never block transactional business logic.
+
+---
+
+### 2. End-to-End Lifecycle Phases
+
+#### Phase 1: Creation, Validation, & Submission
+- **Draft Initialization (`FR-001`):** A marketer creates a new campaign proposal. The system stores this in `DRAFT` state as working copy version 1 (`v1`). In this state, the marketer can iteratively edit parameters (name, target audience, budget, schedule, channel assets) without triggering review workflows.
+- **Submission Gate (`FR-004`):** When ready, the marketer initiates submission. The system intercepts the request and verifies that all mandatory metadata fields are present and valid.
+  - *Validation Failure:* If mandatory fields are missing or invalid, the system rejects the submission with explicit error details. The campaign remains in `DRAFT` state for correction.
+  - *Validation Success:* The system atomically takes an **immutable snapshot (`vN`)** of the proposal (`FR-013`), transitions the campaign state to `PENDING REVIEW [Stage 1: Creative]`, writes an immutable event entry to the audit log (`FR-015`), and emits an asynchronous notification event.
+
+#### Phase 2: Sequential Review Routing & Pre-Execution Guards
+The proposal progresses sequentially through three specialized domain gates:
+- **Pre-Execution Guards (at every stage):**
+  1. **Authorisation Gate (`FR-017`, `NFR-009`):** Confirms the active user holds the specific reviewer role for that stage (`ST-002a` for Stage 1, `ST-002b` for Stage 2, `ST-002c` for Stage 3).
+  2. **Separation of Duties Gate (`FR-018`, `NFR-010`):** Enforces `submitted_by_id != reviewer_id` across all three stages.
+  3. **Concurrency & Stale-Version Gate (`NFR-001`, `NFR-003`):** Validates that the proposal version currently presented to the reviewer is still the latest active version in `PENDING REVIEW` state.
+  4. **Idempotency Gate (`NFR-004`):** If a network retry re-sends an identical decision request with the same idempotency key, the system returns the cached success response without duplicate transitions.
+
+#### Phase 3: Sequential Stage Decisions (`FR-006`, `FR-007`)
+- **Stage 1 (Creative):** Creative review pass advances the campaign to `PENDING REVIEW [Stage 2: Compliance]`.
+- **Stage 2 (Compliance):** Legal review pass advances the campaign to `PENDING REVIEW [Stage 3: Finance]`.
+- **Stage 3 (Finance):** Financial authorization pass clears the final gate, transitioning the campaign to **`APPROVED`** state.
+- **Changes Requested (`FR-009`):** If a reviewer at any stage requests changes, the campaign immediately transitions to `CHANGES REQUESTED` with mandatory feedback notes, returning to the marketer.
+- **Rejection (`FR-008`):** If a reviewer at any stage rejects the campaign, it transitions to `REJECTED`, terminating the active review cycle.
+
+#### Phase 4: The Revision Loop (`FR-010`)
+When a campaign enters `CHANGES REQUESTED`:
+1. The marketer inspects the specific reviewer comments attached to version `vN` (`FR-011`).
+2. The marketer adjusts the proposal, creating an in-progress working draft for version `vN+1`.
+3. The marketer clicks **Re-submit Revised Proposal**.
+4. The proposal re-enters the Validation Gate. Upon passing, the system generates immutable snapshot `vN+1`, records the re-submission audit record, and restarts review at **Stage 1** to ensure full cross-functional integrity.
+
+#### Phase 5: Scheduling Gate & Material Change Invalidation (`FR-012`, `FR-014`)
+- **Scheduling Gate (`FR-012`):** Only campaigns currently in the `APPROVED` state that hold valid cryptographic signatures from all three stages can transition to `SCHEDULED`.
+- **Material Change Verification (`NFR-002`, `FR-014`):**
+  - If any material parameter (budget $\ge \pm 10\%$, audience pivot, claims/disclaimer edits, schedule shifts $> 72$h) is modified after approval, the system immediately invalidates prior approvals (`ApprovalRevokedEvent`), transitions state back to `CHANGES REQUESTED`, and locks the scheduling gate until a new version clears the sequential pipeline.
+  - If the version matches and signatures are valid, the campaign transitions to `SCHEDULED` and outbound events trigger downstream scheduling adapters.
+
+---
+
+### 3. Failure Modes & Recovery Strategies
+
+| Failure Scenario | Stimulus / Trigger | System Detection & Mitigation | Resulting State |
+|:---|:---|:---|:---|
+| **Validation Failure** | Marketer submits proposal with missing budget or audience | System validation gate intercepts payload; returns inline 400 Bad Request error | Retains `DRAFT` state |
+| **Self-Review Attempt** | Submitting marketer attempts to approve own campaign at any stage | Separation of Duties check evaluates `actor_id == creator_id`; rejects with 403 Forbidden | Retains `PENDING REVIEW` state |
+| **Concurrent Review Conflict** | Two reviewers act simultaneously or an edit arrives during review | Optimistic lock check verifies `version` and `stage_index`; rejects conflicting operation with 409 Conflict | First committer wins; second receives conflict prompt |
+| **Network Retry / Duplicate Decision** | Mobile client retries approval request due to network timeout | Server checks `idempotency_key`; returns cached response without duplicate transitions | Retains current state (idempotent) |
+| **Notification Provider Outage** | External push/email provider returns HTTP 500/timeout | System catches error, writes warning log, enqueues exponential retry in Transactional Outbox; transactional state is NOT rolled back (`NFR-005`) | Core workflow succeeds; notifications delivered eventually |
+| **Post-Approval Data Drift** | Proposal details modified after approval sign-off | Scheduling gate evaluates `campaign.version == approved_snapshot.version`; detects mismatch | Approval revoked; reverts to `CHANGES REQUESTED` (`FR-014`) |

@@ -23,37 +23,55 @@ Numerical thresholds are marked as **provisional** when not derived from confirm
 
 ## 1. Consistency
 
-### NFR-001: Approval State Consistency — Critical
+### NFR-001: Approval State Consistency (Multi-Stage Pipeline) — Critical
 
-No campaign may exist in a state that contradicts its approval history. An approval decision must be durably recorded before the campaign state transition is visible to any user.
+No campaign may exist in a state that contradicts its approval history or stage sequence. An approval decision at any stage (Stage 1 Creative, Stage 2 Compliance, Stage 3 Finance) must be durably recorded in the database before the campaign state or stage transition is visible to any user.
 
 **Scenario:**
 
 | Aspect | Detail |
 |---|---|
-| **Source** | Two authorised Reviewers (ST-002) |
-| **Stimulus** | Both attempt to approve the same campaign version simultaneously |
-| **Environment** | Campaign is in Pending Review state; single-approval model is configured |
-| **Response** | The system accepts the first valid approval and transitions the campaign to Approved. The second request either succeeds idempotently (same outcome) or is rejected with a clear message that the campaign is no longer in Pending Review state |
-| **Measure** | No campaign version receives contradictory final state transitions. The campaign is in exactly one state at any point in time. Zero data anomalies in approval records |
+| **Source** | Two authorised Reviewers (or a Reviewer and Marketer concurrently) |
+| **Stimulus** | Reviewer A attempts to approve Stage 1 while Reviewer B attempts to request changes on the same version, or Marketer attempts concurrent edit |
+| **Environment** | Campaign is in `Pending Review [Stage 1]` at version snapshot $vN$ |
+| **Response** | The system accepts the first write atomically via database-level optimistic locking (`WHERE id = :id AND version = :v AND stage_index = 1`). The second request fails with `409 Conflict`, notifying the user that the stage has already transitioned. No contradictory stage transitions can ever be committed |
+| **Measure** | 100% atomic stage transitions. Zero contradictory approval records. Monotonically increasing stage index ($1 \rightarrow 2 \rightarrow 3$). Zero race condition state corruptions |
 
-**Architectural implication:** State transitions must be atomic. Optimistic concurrency control (version-based) or pessimistic locking is required on the campaign aggregate.
+**Architectural Defensible Position:**
+- *Chosen Approach:* Synchronous database-level optimistic locking (`version` counter) combined with unique client `Idempotency-Key` headers.
+- *Why Chosen:* Guarantees strong consistency without blocking database threads. Perfectly suited for mobile clients experiencing network latencies and cellular reconnections.
+- *Why Not Pessimistic Locking:* Locking database rows (`SELECT FOR UPDATE`) across mobile network roundtrips risks hanging database connections indefinitely when reviewers disconnect in transit.
 
 ---
 
-### NFR-002: Version-Approval Binding Integrity — Critical
+### NFR-002: Version-Approval Binding Integrity & Material Change Invalidation — Critical
 
-An approval decision must be immutably bound to the specific campaign version that was reviewed. The system must never allow scheduling of a campaign version different from the approved version.
+An approval decision must be immutably bound to the specific campaign version snapshot that was reviewed. The system must cryptographically verify this binding at the scheduling gate, and must automatically invalidate prior approvals when material changes occur.
 
-**Scenario:**
+**Scenario 1: Version Mismatch at Scheduling Gate**
 
 | Aspect | Detail |
 |---|---|
-| **Source** | Marketer (ST-001) |
-| **Stimulus** | Attempts to schedule a campaign after modifying it post-approval |
-| **Environment** | Campaign was Approved at version N; Marketer edited it, creating version N+1 |
-| **Response** | The system detects the version mismatch, invalidates the approval, and prevents scheduling. The campaign returns to Draft state requiring re-submission |
-| **Measure** | 100% of scheduling operations verify version match with the approval record. No campaign is ever scheduled with an unapproved version |
+| **Source** | Marketer (`ST-001`) or Scheduling Adapter |
+| **Stimulus** | Attempts to schedule a campaign when the current campaign digest does not match the approved snapshot |
+| **Environment** | Campaign was Approved at version $N$ with snapshot hash `0x9f1a`; current working state or draft is version $N+1$ with hash `0x4c2b` |
+| **Response** | The system detects the cryptographic digest divergence, blocks the transition to `Scheduled`, returns `412 Precondition Failed`, and logs a security audit event |
+| **Measure** | 100% of scheduling operations verify SHA-256 digest match against all 3 stage approvals. Zero unapproved or drifted versions are ever scheduled |
+
+**Scenario 2: Material Change Invalidation**
+
+| Aspect | Detail |
+|---|---|
+| **Source** | Marketer (`ST-001`) |
+| **Stimulus** | Modifies budget by $+15\%$, alters target audience geography, or changes legal disclaimer copy on an approved campaign |
+| **Environment** | Campaign is in `Approved` state (or in-review at Stage 2/3) |
+| **Response** | The platform classifies the modification as **Material** (`FR-014`), revokes existing stage approvals, bumps version ($vN \rightarrow vN+1$), transitions state to `Changes Requested` (or `Draft`), and requires a fresh pass through the sequential review pipeline |
+| **Measure** | 100% of material mutations trigger approval revocation and stage pipeline re-entry. Zero post-approval drift leakage |
+
+**Architectural Defensible Position:**
+- *Chosen Approach:* Cryptographic SHA-256 snapshot binding and automated material change detection.
+- *Why Chosen:* Guarantees mathematical non-repudiation for regulatory audits (GDPR, FINRA, SOX 404). Eliminates post-approval drift where an unvetted revision is published.
+- *Why Not Delta Diffs:* Reconstructing point-in-time state from event logs introduces projection lag and potential reconstruction drift on mobile clients. Immutable full snapshots guarantee instant $O(1)$ verification.
 
 ---
 
@@ -347,20 +365,24 @@ The system should expose a health check endpoint indicating whether core depende
 
 ## Assumptions
 
-| ID | Assumption | Traces to |
-|---|---|---|
-| A-005 | Small-to-medium marketing teams (5–50 users, tens to hundreds of campaigns) | NFR-014, NFR-015 |
-| A-012 | Campaign state transitions are synchronous and strongly consistent | NFR-001 |
-| A-013 | The system does not need to handle more than ~50 concurrent users for the initial architecture | NFR-015 |
-| A-014 | Notification delivery is asynchronous and best-effort; failures do not block core workflow | NFR-005 |
+| ID | Assumption | Traces to | Status |
+|---|---|---|---|
+| A-003 | The system implements a **multi-level sequential approval pipeline** (Stage 1: Creative → Stage 2: Compliance/Legal → Stage 3: Finance/Budget). All 3 must approve for the campaign to clear the scheduling gate. | NFR-001 | High (Resolved) |
+| A-005 | Small-to-medium marketing teams (5–50 users, tens to hundreds of campaigns) | NFR-014, NFR-015 | High |
+| A-011 | Material changes (budget $\ge \pm 10\%$, audience scope, claims/disclaimers, dates) automatically invalidate prior approvals and trigger re-approval. | NFR-002 | High (Resolved) |
+| A-012 | Campaign state transitions are synchronous and strongly consistent via optimistic concurrency control (`WHERE id = :id AND version = :v`). | NFR-001 | High (Resolved) |
+| A-013 | The system does not need to handle more than ~50 concurrent users for the initial architecture | NFR-015 | High |
+| A-014 | Notification delivery is asynchronous and decoupled via Transactional Outbox; failures do not block core workflow | NFR-005 | High (Resolved) |
 
 ---
 
 ## Open Questions
 
-| ID | Question | Traces to |
-|---|---|---|
-| OQ-003 | Is multi-tenancy a requirement? Determines whether NFR-011 is in scope. | NFR-011 |
-| OQ-014 | What consistency model does the team prefer? Strong consistency (simplest to reason about) vs. eventual consistency (better availability)? | NFR-001 |
-| OQ-015 | Are there specific regulatory compliance requirements (GDPR, FINRA, HIPAA) that affect audit retention? | NFR-013 |
-| OQ-016 | Should the system support offline-capable operations on mobile (e.g., draft creation while offline, sync when connected)? | NFR-004, NFR-005 |
+| ID | Question | Traces to | Status | Defensible Resolution |
+|---|---|---|---|---|
+| OQ-001 | Multi-level approval vs. single-gate model? | NFR-001 | **Resolved** | **Multi-Level Sequential Pipeline Adopted.** Enforces strict segregation of duties (SOX 404, FINRA 2210) across Creative, Compliance, and Finance gates. |
+| OQ-002 | What constitutes a material change triggering re-approval? | NFR-002 | **Resolved** | **Material Change Classification Adopted.** Changes to budget, audience scope, claims, or dates invalidate approvals; operational UTM tags do not. |
+| OQ-003 | Is multi-tenancy a requirement? Determines whether NFR-011 is in scope. | NFR-011 | Bonus Scope | Single-tenant core domain model with clean tenant_id discriminator on boundary. |
+| OQ-014 | What consistency model does the team prefer? Strong consistency vs. eventual consistency? | NFR-001 | **Resolved** | **Strong Consistency for State Changes.** Optimistic concurrency control serializes state transitions; asynchronous eventual consistency for notifications. |
+| OQ-015 | Are there specific regulatory compliance requirements (GDPR, FINRA, HIPAA) that affect audit retention? | NFR-013 | Scoped | Standard append-only immutable audit trail with 12-month retention and WORM-compatible schema design. |
+| OQ-016 | Should the system support offline-capable operations on mobile? | NFR-004, NFR-005 | **Resolved** | Offline drafting and local cached inspection supported; state-transition actions require server roundtrip with client `Idempotency-Key`. |

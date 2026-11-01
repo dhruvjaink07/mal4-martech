@@ -94,11 +94,17 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
 ```
 .
 ├── README.md                                  # Master index, context, registers & status
+├── DESIGN.md                                  # UI/UX design tokens & visual standards (ui-ux-pro-max + awesome-design-md)
 ├── assets/
-│   ├── diagrams/                              # Rendered visual exports & architecture assets
+│   ├── diagrams/                              # Visual exports, solution brief HTML, PDF & DOCX
+│   │   ├── MAL4_MarTech_One_Page_Solution_Brief.pdf # Official 1-page solution brief PDF
+│   │   ├── one-page-solution-brief.pdf        # Styled A4 vector PDF (single page)
+│   │   ├── one-page-solution-brief.docx       # Microsoft Word formatted document (.docx)
+│   │   └── one-page-solution-brief.html       # Print-ready & responsive executive solution brief
 │   └── references/                            # Domain references, standards, regulatory docs
 │
 └── docs/
+    ├── one-page-solution-brief.md             # Markdown version of 1-Page Solution Brief
     ├── 01-problem-understanding/              # Domain Discovery & Scope Foundation
     │   ├── problem-statement.md               # Context, problem, impact, boundaries, MAL4 alignment
     │   ├── stakeholders.md                    # Primary/secondary actors, concerns, RACI, interaction model
@@ -118,6 +124,7 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
     │   └── ADR-003-event-processing.md        # Sync write-path vs async side-effects & notifications
     │
     ├── 04-workflows/                          # Detailed Workflow & Recovery Specs
+    │   ├── user-journey-flow.mmd              # User journey swimlane flow diagram & operational spec
     │   ├── campaign-lifecycle.md              # Lifecycle state transitions & preconditions
     │   ├── approval-workflow.md               # Review routing, single/multi-stage policies
     │   ├── revision-workflow.md               # Change-detection, diffing, re-approval rules
@@ -154,9 +161,9 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
 | Phase | Milestone | Deliverables | Status |
 |:---:|:---|:---|:---:|
 | **01** | **Domain Discovery & Requirements** | `problem-statement.md`, `stakeholders.md`, `functional-requirements.md`, `non-functional-requirements.md`, `README.md` | **Completed** |
-| **02** | **Core Domain Modelling & State Machine** | `domain-model.md`, `campaign-state-machine.mmd`, `campaign-lifecycle.md` | *Next Up* |
+| **02** | **Core Domain Modelling & State Machine** | `user-journey-flow.mmd`, `campaign-lifecycle.md`, `domain-model.md` | **Completed** |
 | **03** | **Solution Architecture & ADRs** | `solution-overview.md`, `system-context.md`, `ADR-001`, `ADR-002`, `ADR-003`, C4 Diagrams | *Pending* |
-| **04** | **Data Architecture & Workflows** | `database-schema.md`, `event-catalog.md`, `approval-workflow.md`, `revision-workflow.md`, `failure-recovery.md` | *Pending* |
+| **04** | **Data Architecture & Workflows** | Workflows (`approval-workflow.md`, `revision-workflow.md`, `failure-recovery.md`); Data Schemas (`database-schema.md`, `event-catalog.md`) | **Completed** |
 | **05** | **Quality Attributes & Defense** | `scalability.md`, `reliability.md`, `security.md`, `observability.md`, `trade-offs.md`, `failure-scenarios.md`, `anticipated-questions.md` | *Pending* |
 | **06** | **Working User Journey (Mobile)** | Scoped Flutter / Native mobile user journey demonstrating core review & recovery | *Pending* |
 
@@ -168,15 +175,15 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
 |:---:|:---|:---:|:---|
 | **A-001** | Initial architecture is designed for a single organization (single-tenant). Multi-tenancy is modeled at the boundary for modular extensibility. | Medium | [Problem Statement](docs/01-problem-understanding/problem-statement.md) |
 | **A-002** | Campaigns are the primary aggregate root; a campaign contains metadata, asset references, audience criteria, budget, and scheduling window. | High | [Problem Statement](docs/01-problem-understanding/problem-statement.md), `FR-001` |
-| **A-003** | Core approval engine defaults to a single-stage approval gate (one or more authorized reviewers). Multi-stage pipeline is an extensible progression. | Medium | [Stakeholders](docs/01-problem-understanding/stakeholders.md), `FR-007` |
+| **A-003** | The system implements a **multi-level sequential approval pipeline** (Stage 1: Creative → Stage 2: Compliance/Legal → Stage 3: Finance/Budget), guaranteeing strict separation of duties and regulatory compliance before scheduling. | High | [Stakeholders](docs/01-problem-understanding/stakeholders.md), `FR-006`, `FR-007` |
 | **A-004** | Campaign creative assets are referenced via external URI/storage pointers rather than stored directly as raw binary blobs in the campaign record. | High | [Problem Statement](docs/01-problem-understanding/problem-statement.md), `FR-001` |
 | **A-005** | Baseline target workload: 5–50 concurrent users, 10–200 active campaigns, 10–100 review actions/day. | High | [NFR-014](docs/01-problem-understanding/non-functional-requirements.md), [NFR-015](docs/01-problem-understanding/non-functional-requirements.md) |
 | **A-006** | Mobile-first client interaction is mandatory for the MAL4 live evaluation (iOS/Android/Flutter). | High | MAL4 Challenge Rules |
 | **A-007** | Authenticated users receive role claims (Marketer, Reviewer, Admin) via standard Bearer tokens / session credentials. | High | [Stakeholders](docs/01-problem-understanding/stakeholders.md), `FR-017` |
-| **A-008** | Separation of duties is non-negotiable: a submitter cannot approve their own campaign submission. | High | `FR-018`, `NFR-010` |
-| **A-009** | Core state updates and audit logging are synchronously guaranteed; downstream notifications and analytics dispatch are asynchronous and best-effort. | High | `FR-019`, `NFR-005` |
-| **A-010** | Campaign versions are stored as immutable full-snapshot records rather than incremental delta diffs. | Medium | `FR-013`, `NFR-002` |
-| **A-011** | Any edit made to an approved campaign invalidates its approval, moving it back to Draft/Pending Review. | High | `FR-014`, `NFR-002` |
+| **A-008** | Separation of duties is non-negotiable: a submitter cannot approve their own campaign submission (`submitted_by_id != reviewer_id`). | High | `FR-018`, `NFR-010` |
+| **A-009** | Core state updates and audit logging are synchronously guaranteed; downstream notifications and analytics dispatch are asynchronous and best-effort via Transactional Outbox. | High | `FR-019`, `NFR-005` |
+| **A-010** | Campaign versions are stored as immutable full-snapshot records rather than incremental delta diffs. | High | `FR-013`, `NFR-002` |
+| **A-011** | Any material edit made to an approved or in-review campaign invalidates its approval, generating a new version snapshot and re-entering the review pipeline. | High | `FR-014`, `NFR-002` |
 | **A-012** | State transitions are strongly consistent; concurrent requests on the same campaign must serialize via optimistic locking. | High | `NFR-001`, `NFR-003` |
 | **A-013** | Operations on mobile clients over intermittent networks must supply idempotency keys. | High | `NFR-004` |
 | **A-014** | Offline capabilities on mobile focus on drafting and inspecting cached proposals, while state-transition actions require server confirmation. | Medium | `NFR-004`, `OQ-016` |
@@ -187,15 +194,15 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
 
 | ID | Open Question | Owner | Priority | Status |
 |:---:|:---|:---:|:---:|:---:|
-| **OQ-001** | Should the initial data model accommodate dynamic multi-stage approval chains (e.g., Creative → Legal → Finance) or a single gate? | Architect Lead | High | Open |
-| **OQ-002** | Should re-approval trigger on *any* modification or only changes exceeding financial/audience materiality thresholds? | Domain Lead | Medium | Proposed: All edits invalidate |
+| **OQ-001** | Should the initial data model accommodate dynamic multi-stage approval chains (e.g., Creative → Legal → Finance) or a single gate? | Architect Lead | High | **Resolved** (Adopted 3-stage sequential pipeline) |
+| **OQ-002** | Should re-approval trigger on *any* modification or only changes exceeding financial/audience materiality thresholds? | Domain Lead | Medium | **Resolved** (Material change classification adopted) |
 | **OQ-003** | Is multi-tenancy an explicit requirement for the hackathon evaluation or a bonus architectural dimension? | Jury / Team | Medium | Scoped as bonus extension |
-| **OQ-004** | Does the scheduling state transition trigger an internal scheduled job or an outbound dispatch to an external executor? | Architect Lead | Medium | Open |
+| **OQ-004** | Does the scheduling state transition trigger an internal scheduled job or an outbound dispatch to an external executor? | Architect Lead | Medium | **Resolved** (Outbound dispatch via Outbox) |
 | **OQ-005** | What mobile framework (Flutter vs. Kotlin Compose vs. Swift) allows the team to deliver the required user journey fastest? | Team | High | Open |
 | **OQ-006** | Should campaign withdrawal be allowed if one reviewer in a multi-reviewer pool has already submitted feedback? | Domain Lead | Low | Open |
 | **OQ-007** | Is reviewer delegation (temporary re-assignment of review authority during leave) in scope? | Domain Lead | Low | Out of Initial Scope |
-| **OQ-008** | Should rejection allow in-place restart to Draft or enforce the creation of a cloned new campaign? | Domain Lead | Low | Open |
-| **OQ-009** | In multi-reviewer pools, does approval require consensus ($N$-of-$N$) or threshold ($M$-of-$N$ / first approval)? | Domain Lead | Medium | Proposed: Single-approval default |
+| **OQ-008** | Should rejection allow in-place restart to Draft or enforce the creation of a cloned new campaign? | Domain Lead | Low | **Resolved** (In-place restart with version bump) |
+| **OQ-009** | In multi-reviewer pools, does approval require consensus ($N$-of-$N$) or threshold ($M$-of-$N$ / first approval)? | Domain Lead | Medium | **Resolved** (Sequential stage gates: 1 pass per stage) |
 | **OQ-010** | What is the audit trail retention requirement (e.g., standard 12 months vs. FINRA 3-year WORM compliance)? | Architect Lead | Low | Scoped to standard append-only |
 | **OQ-011** | How should conflicting offline edits on mobile be reconciled upon reconnecting? | Architect Lead | High | Open |
 

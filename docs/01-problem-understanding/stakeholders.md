@@ -46,31 +46,44 @@ For the MAL4 challenge, we distinguish between:
 
 ---
 
-### ST-002: Reviewer (Approver)
+### ST-002: Reviewer (Multi-Level Approval Gatekeepers)
 
-**Also known as:** Marketing Manager, Brand Manager, Compliance Officer, Creative Director
+**Also known as:** Campaign Approver, Stage Reviewer
 
-**Description:** An authorised person who evaluates submitted campaigns and makes approval decisions. In real-world platforms, this role may be filled by different people depending on the review stage — a brand manager for creative review, a legal/compliance officer for regulatory review, or a finance lead for budget review.
+**Description:** Authorised domain specialists who evaluate submitted campaigns and execute approval decisions within a structured sequential approval pipeline. Rather than conflating creative, legal, and financial decisions into a single generalist gatekeeper, the platform models three distinct sequential review gatekeepers:
 
-For the initial architecture, we model a single Reviewer role with permissions to approve, reject, or request changes. The architecture should support future differentiation (e.g., separate compliance and creative reviewers).
+#### ST-002a: Creative & Brand Reviewer (Stage 1 Gatekeeper)
+* **Also known as:** Brand Manager, Creative Director, Marketing Lead
+* **Scope of Review:** Evaluates creative messaging, tone of voice, visual assets, target audience alignment, and channel-specific promotional strategy.
+* **Responsibilities:**
+  - Verify that visual assets and copy adhere to organizational brand guidelines.
+  - Confirm that marketing objectives match the selected channels and audience.
+  - Approve (advancing campaign to Stage 2), Reject, or Request Changes with creative feedback.
 
-**Responsibilities:**
-- Receive notifications when campaigns are submitted for review.
-- Review campaign content, audience, budget, and schedule.
-- Approve campaigns that meet standards and policies.
-- Reject campaigns that are fundamentally unsuitable.
-- Request changes with specific feedback when modifications are needed.
-- Ensure that the version being reviewed is the current version.
+#### ST-002b: Legal & Compliance Officer (Stage 2 Gatekeeper)
+* **Also known as:** Compliance Manager, Privacy Officer, Regulatory Counsel
+* **Scope of Review:** Reviews campaigns for regulatory compliance (GDPR consent rules, CAN-SPAM opt-out mechanisms, truth-in-advertising standards, FINRA Rule 2210 retail claims).
+* **Responsibilities:**
+  - Verify mandatory legal disclaimers, terms, and privacy disclosures.
+  - Inspect targeting criteria to prevent prohibited audience segmenting (e.g., restricted demographics, geo-fencing).
+  - Approve (advancing campaign to Stage 3), Reject, or Request Changes with regulatory remediation requirements.
 
-**Key concerns:**
-- Seeing only campaigns that require their attention (not noise from irrelevant submissions).
-- Confidence that the campaign has not been modified since submission (version integrity).
-- Ability to compare the current version with previous versions when reviewing revisions.
-- Clear audit trail of their decisions for accountability.
-- No ambiguity about whether their approval applies to the current version.
-- Efficient batch review workflow when multiple campaigns are pending.
+#### ST-002c: Finance & Budget Approver (Stage 3 Gatekeeper)
+* **Also known as:** Budget Owner, Finance Director, Commercial Controller
+* **Scope of Review:** Inspects campaign spend allocations, cost centers, and delegation-of-authority (DOA) financial thresholds under Sarbanes-Oxley (SOX 404).
+* **Responsibilities:**
+  - Verify that budget amounts are allocated from authorized cost centers.
+  - Confirm spend commits stay within designated quarterly or departmental budget limits.
+  - Final Approval (clearing the campaign for the Scheduling Gate), Reject, or Request Changes.
 
-**Interaction frequency:** Daily; may have bursts of multiple reviews.
+**Key concerns across all Reviewers:**
+- Seeing only campaigns that require their specific domain attention (Stage 1 sees pending creative; Stage 2 sees brand-approved campaigns; Stage 3 sees legally cleared campaigns).
+- Cryptographic confidence that the campaign has not been modified since submission (immutable version snapshot binding).
+- Ability to inspect side-by-side structured diffs when reviewing revisions ($vN$ vs $vN+1$).
+- Clear audit trail of decisions for compliance and personal accountability.
+- Strict anti-self-approval enforcement (`submitted_by_id != reviewer_id`).
+
+**Interaction frequency:** Daily; review queues processed via mobile alerts or batch dashboard.
 
 ---
 
@@ -81,21 +94,19 @@ For the initial architecture, we model a single Reviewer role with permissions t
 **Description:** The person responsible for configuring and maintaining the campaign management system. Sets up approval workflows, manages user roles and permissions, configures notification rules, and monitors system health.
 
 **Responsibilities:**
-- Configure approval workflow rules (who can approve, how many approvals required).
-- Manage user accounts and role assignments.
-- Define which campaign changes trigger re-approval.
-- Configure notification channels and escalation policies (future scope).
-- Monitor system activity and audit logs.
-- Troubleshoot workflow issues (stuck campaigns, failed notifications).
+- Configure approval workflow rules (stage definitions, reviewer role bindings, DOA spend thresholds).
+- Manage user accounts, role assignments, and authentication policies.
+- Define and adjust material change detection thresholds.
+- Monitor system activity, outbox dispatch queues, and audit logs.
+- Troubleshoot workflow exceptions (stuck campaigns, DLQ notifications).
 
 **Key concerns:**
-- Ability to configure workflows without code changes.
-- Visibility into system health and bottlenecks.
-- Access to audit logs for governance and compliance reporting.
-- User management that supports the organisation's team structure.
-- System reliability — the admin is first to hear about outages.
+- Ability to configure workflows and reviewer assignments without code deployments.
+- Visibility into system health, queue latencies, and review bottlenecks.
+- Access to immutable audit logs for governance, internal controls, and regulatory reporting.
+- High platform availability and reliable failure recovery.
 
-**Interaction frequency:** Weekly for configuration; ad hoc for troubleshooting.
+**Interaction frequency:** Weekly for configuration; ad hoc for operational maintenance.
 
 ---
 
@@ -103,44 +114,28 @@ For the initial architecture, we model a single Reviewer role with permissions t
 
 ### ST-004: Marketing Leadership (CMO / VP / Director)
 
-**Description:** Senior leaders who oversee the marketing function. They do not typically interact with the campaign system directly but rely on its outputs for governance and decision-making.
+**Description:** Senior executives who oversee marketing strategy and organizational governance. They do not typically interact with individual campaign approvals directly but rely on platform telemetry and governance guarantees.
 
 **Concerns:**
-- Campaigns go through proper governance before publication.
-- Budget commitments are authorised by appropriate personnel.
-- Regulatory and brand risk is managed.
-- Visibility into campaign pipeline and approval bottlenecks (future: reporting/dashboards).
+- Strict governance: 100% assurance that unapproved or unreviewed campaigns can never be scheduled or published.
+- Budget oversight: spend commitments strictly enforce delegation-of-authority limits.
+- Risk management: protection against brand erosion and regulatory fines.
+- Campaign throughput: visibility into pipeline velocity and approval bottlenecks.
 
-**Interaction:** Indirect — through reports, dashboards, and escalations.
+**Interaction:** Indirect — executive reporting, milestone summaries, and high-threshold escalation overrides.
 
 ---
 
-### ST-005: Legal and Compliance Team
+### ST-005: External Auditors & Regulatory Inspectors
 
-**Description:** Reviews campaigns for regulatory compliance (GDPR, CAN-SPAM, industry-specific regulations). In regulated industries (financial services, healthcare, pharma), this is a mandatory approval gate.
-
-**Concerns:**
-- Access to review campaign content, disclaimers, and audience targeting.
-- Assurance that compliance-approved content is not modified after their sign-off.
-- Immutable audit trail proving their review was completed.
-- Re-approval is triggered when legally material changes occur.
-
-**Interaction:** Per campaign, when compliance review is required. May be integrated as a specialised reviewer role in a multi-stage approval workflow (future scope).
-
-> **Note:** For the initial architecture, Legal/Compliance is modelled as a specialisation of the Reviewer role (ST-002). If multi-stage approvals are implemented, they become a distinct approval stage.
-
----
-
-### ST-006: Finance / Budget Owner
-
-**Description:** Approves campaign budget allocations. In SOX-compliant organisations, marketing spend above certain thresholds requires financial authorisation with delegation-of-authority controls.
+**Description:** Third-party regulatory authorities (e.g., GDPR data protection authorities, FTC, FINRA) or internal corporate governance auditors (SOX 404 compliance teams) examining campaign history.
 
 **Concerns:**
-- Budget amounts in campaigns are accurate and within authorised limits.
-- Budget changes to approved campaigns are flagged and require re-authorisation.
-- Audit trail connecting budget approval to the specific campaign version.
+- Immutable, tamper-evident audit trails linking scheduled campaigns to the exact version reviewed by compliance and finance.
+- Mathematically verifiable proof that the marketer who created the campaign did not approve their own budget or disclaimers.
+- Complete lifecycle lineage reconstructing every review decision, timestamp, and feedback comment.
 
-**Interaction:** Per campaign, when budget approval is required. Initially modelled as a Reviewer concern.
+**Interaction:** Read-only ad-hoc audits and compliance export inspections.
 
 ---
 
@@ -162,63 +157,122 @@ These are not human stakeholders but systems that interact with the campaign man
 
 ## Stakeholder Concerns Matrix
 
-| ID | Stakeholder | Role | Key Concerns | Priority |
+| ID | Stakeholder | Approval Stage / Role | Key Concerns | Priority |
 |---|---|---|---|---|
-| ST-001 | Marketer | Campaign Creator | Usability, workflow transparency, revision tracking | **High** |
-| ST-002 | Reviewer | Approver | Version integrity, decision auditability, review efficiency | **High** |
-| ST-003 | System Admin | Platform Admin | Configuration flexibility, system health, audit access | **High** |
-| ST-004 | Marketing Leadership | Executive Sponsor | Governance, budget control, risk management | **Medium** |
-| ST-005 | Legal/Compliance | Compliance Reviewer | Regulatory compliance, immutable audit trail, post-approval change detection | **Medium** |
-| ST-006 | Finance | Budget Owner | Budget accuracy, authorisation limits, spend audit trail | **Medium** |
+| **ST-001** | Marketer | Campaign Creator / Submitter | Usability, transparent stage tracking, structured revision feedback, offline drafting | **High** |
+| **ST-002a** | Creative & Brand Reviewer | Stage 1 Approver | Brand identity integrity, asset quality, tone of voice, objective-audience alignment | **High** |
+| **ST-002b** | Legal & Compliance Officer | Stage 2 Approver | GDPR/CAN-SPAM compliance, disclaimer accuracy, prohibited targeting avoidance | **High** |
+| **ST-002c** | Finance & Budget Approver | Stage 3 Approver | SOX 404 DOA spend authorization, cost center verification, ROI budget caps | **High** |
+| **ST-003** | System Administrator | Platform Operations & Config | Stage rule configuration, user role provisioning, outbox queue health, audit queryability | **High** |
+| **ST-004** | Marketing Leadership | Executive Governance | Pipeline velocity, zero unapproved campaign leakage, risk mitigation, audit compliance | **Medium** |
+| **ST-005** | External Auditors / Regulators | Independent Governance | Tamper-evident audit lineage, mathematical snapshot verification, anti-self-approval proof | **Medium** |
 
 ---
 
-## Stakeholder Interaction Model
+## RACI Governance Matrix Across Lifecycle Stages
+
+| Lifecycle Stage | Marketer (`ST-001`) | Creative Reviewer (`ST-002a`) | Legal/Compliance (`ST-002b`) | Finance Approver (`ST-002c`) | System Admin (`ST-003`) |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Drafting & Editing** | **A / R** | I | I | I | I |
+| **Submission (`FR-004`)** | **A / R** | C | I | I | I |
+| **Stage 1: Creative Review (`FR-006`)** | I | **A / R** | I | I | I |
+| **Stage 2: Compliance Review (`FR-006`)** | I | I | **A / R** | I | I |
+| **Stage 3: Finance Authorization (`FR-007`)** | I | I | I | **A / R** | I |
+| **Revision & Resubmission (`FR-010`)** | **A / R** | C / R | C / R | C / R | I |
+| **Material Change Invalidation (`FR-014`)** | R | C | C | C | **A** (System) |
+| **Scheduling Gate (`FR-012`)** | R | I | I | I | **A** (System) |
+
+*(Legend: **A** = Accountable, **R** = Responsible, **C** = Consulted, **I** = Informed)*
+
+---
+
+## Stakeholder Interaction Model (Multi-Stage Sequential Pipeline)
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                   Campaign Review & Approval System              │
-│                                                                  │
-│  ┌──────────┐    submits     ┌──────────┐    configures          │
-│  │ Marketer │───────────────▶│ Campaign │◀──────────────┐        │
-│  │ (ST-001) │◀───────────────│  Engine  │               │        │
-│  └──────────┘  feedback/     └────┬─────┘         ┌─────┴──────┐ │
-│                 status            │               │ Sys Admin  │ │
-│                              reviews              │  (ST-003)  │ │
-│                                   │               └────────────┘ │
-│  ┌──────────┐    decides     ┌────▼─────┐                        │
-│  │ Reviewer │◀───────────────│  Review  │                        │
-│  │ (ST-002) │───────────────▶│  Queue   │                        │
-│  └──────────┘  approve/      └──────────┘                        │
-│                reject/                                           │
-│                request changes                                   │
-└─────────────────────────────────────────────────────────────────┘
-         │                              │
-         ▼                              ▼
-  ┌──────────────┐             ┌──────────────┐
-  │ Notification │             │  Scheduling  │
-  │   Service    │             │    System    │
-  └──────────────┘             └──────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        Campaign Review & Approval System                               │
+│                                                                                        │
+│  ┌──────────┐   Submits vN   ┌────────────────┐   Configures Policies  ┌─────────────┐ │
+│  │ Marketer │───────────────▶│    Campaign    │◀───────────────────────│  Sys Admin  │ │
+│  │ (ST-001) │◀───────────────│     Engine     │                        │  (ST-003)   │ │
+│  └────┬─────┘   Revisions    └───────┬────────┘                        └─────────────┘ │
+│       │                              │                                                 │
+│       │      ┌───────────────────────┴────────────────────────┐                         │
+│       │      │         SEQUENTIAL REVIEW PIPELINE             │                         │
+│       │      │                                                │                         │
+│       │      │  ┌──────────────┐   Pass    ┌──────────────┐   │                         │
+│       │      │  │   Stage 1:   │──────────▶│   Stage 2:   │   │                         │
+│       │      │  │Creative Rev. │           │ Legal/Compl. │   │                         │
+│       │      │  │  (ST-002a)   │           │  (ST-002b)   │   │                         │
+│       │      │  └──────┬───────┘           └──────┬───────┘   │                         │
+│       │      │         │ Changes                  │ Changes   │                         │
+│       │      │         │ Req.                     │ Req.      │                         │
+│       │      │         ▼                          ▼           │                         │
+│       │      │  ┌─────────────────────────────────────────┐   │                         │
+│       └──────┼─▶│      Revision Loop (FR-009 / FR-010)     │   │                         │
+│              │  └─────────────────────────────────────────┘   │                         │
+│              │                                    │ Pass      │                         │
+│              │                                    ▼           │                         │
+│              │                             ┌──────────────┐   │                         │
+│              │                             │   Stage 3:   │   │                         │
+│              │                             │ Finance/DOA  │   │                         │
+│              │                             │  (ST-002c)   │   │                         │
+│              │                             └──────┬───────┘   │                         │
+│              │                                    │ Final     │                         │
+│              │                                    │ Approval  │                         │
+│              │                                    ▼           │                         │
+│              │                             ┌──────────────┐   │                         │
+│              │                             │   APPROVED   │   │                         │
+│              │                             │  FOR SCHED.  │   │                         │
+│              │                             └──────┬───────┘   │                         │
+│              └────────────────────────────────────┼───────────┘                         │
+└───────────────────────────────────────────────────┼─────────────────────────────────────┘
+                                                    │
+                                                    ▼ (Clears Gate)
+                                             ┌──────────────┐
+                                             │  Scheduling  │
+                                             │    System    │
+                                             └──────────────┘
 ```
+
+---
+
+## Defensible Architectural Positions for Stakeholders & Approval Roles
+
+### 1. Multi-Level Specialized Gatekeepers vs. Single Generalist Reviewer
+- **Chosen Approach:** Explicit multi-level sequential pipeline with three dedicated role profiles: Stage 1 (`ST-002a` Creative), Stage 2 (`ST-002b` Legal/Compliance), and Stage 3 (`ST-002c` Finance/DOA).
+- **Why Chosen (Defensible Rationale):** Real-world enterprise marketing demands distinct domains of expertise. A creative director cannot legally certify GDPR consent compliance or warranty disclaimers; a compliance officer does not hold corporate delegation of authority (DOA) to commit \$100,000 ad spends. Multi-stage separation ensures each gatekeeper is held accountable solely for their legal and fiduciary remit.
+- **Why Not Single Generalist Gatekeeper:** While simpler, allowing any single reviewer to approve campaigns conflates distinct corporate liabilities, creates severe compliance audit vulnerabilities (failing SOX 404 Section 8), and increases error rates.
+
+### 2. Sequential Staging vs. Parallel All-At-Once Consensus ($N$-of-$N$)
+- **Chosen Approach:** Sequential execution ($Stage_1 \rightarrow Stage_2 \rightarrow Stage_3$).
+- **Why Chosen (Defensible Rationale):** Resource efficiency and cost minimization. Legal counsel and finance directors are expensive, high-demand stakeholders. Submitting incomplete or creatively substandard campaigns to legal and finance simultaneously wastes valuable executive time. Stage 1 acts as a quality filter: if creative issues exist, the proposal is returned to the marketer before legal or finance spend time on it.
+- **Why Not Parallel Consensus?** In a parallel model, legal might spend hours redlining copy that creative subsequently rejects and completely rewrites, doubling review overhead and creating confusing, contradictory feedback loops.
+
+### 3. Strict Separation of Duties (Anti-Self-Approval Enforcement)
+- **Chosen Approach:** Hard application and database constraints enforcing `campaign.submitted_by_id != reviewer.id` across all three stages.
+- **Why Chosen (Defensible Rationale):** Mandatory for regulatory compliance (FINRA 2210, SOX 404). Even if a user holds both Marketer and Reviewer role credentials, the platform structurally blocks them from reviewing or approving their own campaign submissions.
+- **Why Not Configurable Self-Approval Policy:** Making self-approval toggleable creates audit loop-holes and invites governance circumvention under tight deadlines.
 
 ---
 
 ## Assumptions
 
-| ID | Assumption | Traces to |
-|---|---|---|
-| A-003 | The initial architecture models a single reviewer role. Multi-stage approval (creative → compliance → budget) is a future extension. | OQ-001 |
-| A-007 | All primary stakeholders authenticate through a shared identity provider with role-based access control. | — |
-| A-008 | The Marketer and Reviewer roles are distinct — a person may hold both roles, but cannot review their own submissions. | Industry best practice (separation of duties) |
-| A-009 | Notification delivery is best-effort; failure to notify does not block the approval workflow. | OQ — needs Architecture Lead input |
+| ID | Assumption | Traces to | Status |
+|---|---|---|---|
+| A-003 | The system implements a **multi-level sequential approval pipeline** (Stage 1: Creative → Stage 2: Compliance/Legal → Stage 3: Finance/Budget), guaranteeing strict separation of duties and regulatory compliance before scheduling. | OQ-001 | High (Resolved) |
+| A-007 | All primary stakeholders authenticate through a shared identity provider with role-based access control. | — | High |
+| A-008 | The Marketer and Reviewer roles are strictly distinct per campaign — a user cannot review their own submissions (`submitted_by_id != reviewer_id`). | Industry best practice (SOX 404, FINRA 2210) | High (Non-negotiable) |
+| A-009 | Notification delivery is decoupled via Transactional Outbox; notification failures never block the approval workflow. | Failure Recovery | High (Resolved) |
+| A-011 | Material changes made to an approved or in-review campaign automatically invalidate approvals and re-route the proposal for re-approval. | FR-014, Revision Workflow | High (Resolved) |
 
 ---
 
 ## Open Questions
 
-| ID | Question | Traces to |
-|---|---|---|
-| OQ-001 | Should the system support multi-stage approvals in the initial design? This affects how Reviewer (ST-002), Legal (ST-005), and Finance (ST-006) are modelled. | Problem Statement OQ-001 |
-| OQ-007 | Can a reviewer delegate their review to another authorised person? | Escalation and delegation policy |
-| OQ-008 | Should the system enforce that a submitter cannot approve their own campaign, or is this a configurable policy? | Separation of duties |
-| OQ-009 | Are there scenarios where multiple reviewers must all approve (consensus), or is a single authorised approval sufficient? | Approval policy design |
+| ID | Question | Traces to | Status | Defensible Resolution |
+|---|---|---|---|---|
+| OQ-001 | Should the system support multi-stage approvals in the initial design? | Problem Statement | **Resolved** | **Adopted.** 3-stage sequential pipeline (Creative → Legal → Finance) enforced to eliminate regulatory liability and SoD breaches. |
+| OQ-007 | Can a reviewer delegate their review to another authorised person? | Escalation Policy | Scoped Out | Reviewer delegation deferred to v2. Initial system requires designated role-holders. |
+| OQ-008 | Should the system enforce that a submitter cannot approve their own campaign? | Separation of duties | **Resolved** | **Hard Enforced.** Invariant `submitted_by_id != reviewer_id` enforced in code and database constraints. |
+| OQ-009 | In multi-stage review, does each stage require single authorized approval or consensus? | Approval Policy | **Resolved** | **Sequential Stage Gate.** Each stage requires exactly 1 authorized domain specialist for that stage; all 3 stages must sequentially pass. |
