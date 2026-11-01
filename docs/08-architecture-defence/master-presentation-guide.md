@@ -16,7 +16,7 @@
 ### ⏱️ 0:00 – 0:45 | Problem & The One-Pager (Speaker 1)
 > *"Judges, enterprise campaigns involve millions in ad spend and severe regulatory liabilities under GDPR, CAN-SPAM, and SOX 404. Today, reviews happen over Slack and spreadsheets, leading to the most dangerous failure in MarTech: **post-approval drift**—where Version 1 is approved, but someone modifies copy or budget, and an unreviewed Version 2 goes live.*  
 > *We built a deterministic platform where an approval is permanently bound to an immutable snapshot:*  
-> $$\text{Draft} \xrightarrow{\text{Submit}} \text{Pending Review} \xrightarrow{\text{Review}} \{\text{Approved}, \text{Changes Requested}, \text{Rejected}\} \xrightarrow{\text{Revise}} \text{Re-Submit} \xrightarrow{\text{Gate}} \text{Scheduled}$$  
+> * **`Draft` &rarr; (Submit) &rarr; `Pending Review` &rarr; (Review) &rarr; [`Approved` | `Changes Requested` | `Rejected`] &rarr; (Revise & Re-Submit) &rarr; `Gate` &rarr; `Scheduled`**  
 > *No campaign can ever clear the scheduling gate unless its current digest matches the exact version approved."*
 
 ### ⏱️ 0:45 – 01:45 | High-Level Design (HLD) (Speaker 1)
@@ -84,7 +84,7 @@
 
 ### 1.3 The Deterministic Core Flow (40s)
 > *"We guide every campaign through a deterministic 6-state lifecycle:*  
-> $$\text{Draft} \xrightarrow{\text{Submit}} \text{Pending Review} \xrightarrow{\text{Review}} \{\text{Approved}, \text{Changes Requested}, \text{Rejected}\} \xrightarrow{\text{Revise}} \text{Re-Submit} \xrightarrow{\text{Gate}} \text{Scheduled}$$  
+> * **`Draft` &rarr; (Submit) &rarr; `Pending Review` &rarr; (Review) &rarr; [`Approved` | `Changes Requested` | `Rejected`] &rarr; (Revise & Re-Submit) &rarr; `Gate` &rarr; `Scheduled`**  
 > *Only an approved campaign on its approved snapshot can ever clear the scheduling gate."*
 
 > 🎙️ **Transition to HLD:** *"To enforce these business rules without compromise, our High-Level Design establishes a clean, decoupled modular architecture."*

@@ -65,7 +65,7 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
 - **Track:** MarTech (Marketing Technology)
 - **Problem Area:** Campaign Review and Approval Workflows
 - **Core Flow:**
-  $$\text{Draft} \xrightarrow{\text{Submit}} \text{Pending Review} \xrightarrow[\text{Reject}]{\text{Approve / Request Changes}} \{\text{Approved}, \text{Changes Requested}, \text{Rejected}\} \xrightarrow[\text{Re-submit}]{\text{Revise}} \text{Pending Review} \xrightarrow{\text{Gate}} \text{Scheduled}$$
+  **`Draft` &rarr; (Submit) &rarr; `Pending Review` &rarr; (Review) &rarr; [`Approved` | `Changes Requested` | `Rejected`] &rarr; (Revise & Re-Submit) &rarr; `Gate` &rarr; `Scheduled`**
 
 ---
 
