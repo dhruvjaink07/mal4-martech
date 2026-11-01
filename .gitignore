@@ -1,0 +1,15 @@
+# OS
+.DS_Store
+*.swp
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# Flutter build artifacts
+app/.dart_tool/
+app/build/
+app/.flutter-plugins-dependencies
+app/.pub-cache/
+app/.pub/

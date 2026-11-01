@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MAL4 MarTech — Architecture Decision Records (ADRs)</title>
+<style>
+/* ==========================================================================
+   STRICT PALETTE: RED, GREEN, BLACK (+ white/gray backgrounds)
+   HIGH READABILITY, PUBLICATION-GRADE TYPOGRAPHY
+   ========================================================================== */
+
+@page {
+  size: A4 portrait;
+  margin: 12mm 14mm 12mm 14mm;
+  @top-left {
+    content: "MAL4 MarTech • Architecture Decision Records (ADRs)";
+    font-size: 7.5pt;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #000000;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  @top-right {
+    content: "Document ID: MAL4-ADR-v1.0";
+    font-size: 7.5pt;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #000000;
+    font-weight: 700;
+  }
+  @bottom-left {
+    content: "Mobile Architecture Lab 4 (MAL4) • Dimension: Architecture Decisions & Governance";
+    font-size: 7.5pt;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #333333;
+  }
+  @bottom-right {
+    content: "Page " counter(page);
+    font-size: 7.5pt;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: #000000;
+    font-weight: 800;
+  }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #000000;
+  background-color: #ffffff;
+  line-height: 1.42;
+  font-size: 9pt;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Typography */
+h1 {
+  font-size: 15pt;
+  font-weight: 900;
+  color: #000000;
+  line-height: 1.2;
+  margin-top: 13pt;
+  margin-bottom: 6pt;
+  border-bottom: 2.5px solid #000000;
+  padding-bottom: 3pt;
+  page-break-after: avoid;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 11.5pt;
+  font-weight: 800;
+  color: #000000;
+  line-height: 1.25;
+  margin-top: 10pt;
+  margin-bottom: 4.5pt;
+  border-bottom: 1.2px solid #000000;
+  padding-bottom: 2.5pt;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-size: 9.5pt;
+  font-weight: 700;
+  color: #000000;
+  line-height: 1.3;
+  margin-top: 8pt;
+  margin-bottom: 3.5pt;
+  page-break-after: avoid;
+}
+
+p {
+  margin-bottom: 5.5pt;
+  color: #111111;
+}
+
+strong {
+  font-weight: 700;
+  color: #000000;
+}
+
+em {
+  font-style: italic;
+}
+
+.text-green {
+  color: #166534;
+  font-weight: 800;
+}
+
+.text-red {
+  color: #991b1b;
+  font-weight: 800;
+}
+
+code {
+  font-family: "SF Mono", Menlo, Consolas, Monaco, monospace;
+  font-size: 8pt;
+  background-color: #f5f5f5;
+  color: #000000;
+  padding: 1px 3.5px;
+  border-radius: 3px;
+  border: 1px solid #d4d4d4;
+  font-weight: 500;
+}
+
+.math {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-style: italic;
+  color: #000000;
+  font-weight: 600;
+}
+
+.doc-link {
+  color: #000000;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+/* Lists */
+ul, ol {
+  margin-left: 16pt;
+  margin-bottom: 7pt;
+}
+
+li {
+  margin-bottom: 2.5pt;
+  color: #111111;
+}
+
+/* Tables */
+.table-container {
+  margin-top: 6pt;
+  margin-bottom: 8pt;
+  page-break-inside: avoid;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+  line-height: 1.28;
+  border: 1.5px solid #000000;
+}
+
+th, td {
+  padding: 4.5pt 6.5pt;
+  border: 1px solid #000000;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  background-color: #000000;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid #000000;
+}
+
+tr:nth-child(even) td {
+  background-color: #fafafa;
+}
+
+/* Strict Red / Green / Black Callouts */
+.callout-black {
+  background-color: #f9f9f9;
+  border: 1px solid #000000;
+  border-left: 5px solid #000000;
+  padding: 6pt 10pt;
+  margin-top: 6pt;
+  margin-bottom: 8pt;
+  font-size: 8.5pt;
+  color: #000000;
+  border-radius: 0 4pt 4pt 0;
+}
+
+.callout-green {
+  background-color: #f0fdf4;
+  border: 1px solid #16a34a;
+  border-left: 5px solid #16a34a;
+  padding: 6pt 10pt;
+  margin-top: 6pt;
+  margin-bottom: 8pt;
+  font-size: 8.5pt;
+  color: #166534;
+  border-radius: 0 4pt 4pt 0;
+}
+
+.callout-red {
+  background-color: #fef2f2;
+  border: 1px solid #dc2626;
+  border-left: 5px solid #dc2626;
+  padding: 6pt 10pt;
+  margin-top: 6pt;
+  margin-bottom: 8pt;
+  font-size: 8.5pt;
+  color: #991b1b;
+  border-radius: 0 4pt 4pt 0;
+}
+
+/* Code Blocks */
+pre.code-block {
+  background-color: #fafafa;
+  color: #000000;
+  padding: 7pt 9pt;
+  border-radius: 4pt;
+  font-family: "SF Mono", Menlo, Consolas, Monaco, monospace;
+  font-size: 7.5pt;
+  line-height: 1.35;
+  overflow-x: auto;
+  margin-top: 6pt;
+  margin-bottom: 8pt;
+  page-break-inside: avoid;
+  border: 1.5px solid #000000;
+}
+
+pre.code-block code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border: none;
+  font-size: inherit;
+}
+
+/* Strict Badges */
+.badge {
+  display: inline-block;
+  padding: 1.5pt 5pt;
+  font-size: 7pt;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 3pt;
+  vertical-align: middle;
+}
+
+.badge-green {
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1.5px solid #16a34a;
+}
+
+.badge-red {
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1.5px solid #dc2626;
+}
+
+.badge-black {
+  background-color: #000000;
+  color: #ffffff;
+  border: 1.5px solid #000000;
+}
+
+/* Layout & Page Breaks */
+.page-break {
+  page-break-before: always;
+  break-before: page;
+}
+
+.cover-page {
+  padding-top: 8pt;
+  padding-bottom: 8pt;
+}
+
+.cover-header {
+  border-bottom: 3.5px solid #000000;
+  padding-bottom: 8pt;
+  margin-bottom: 12pt;
+}
+
+.cover-eyebrow {
+  font-size: 8pt;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #000000;
+  margin-bottom: 3pt;
+  display: flex;
+  align-items: center;
+  gap: 5pt;
+}
+
+.cover-eyebrow .dot-green {
+  width: 7px;
+  height: 7px;
+  background-color: #16a34a;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.cover-title {
+  font-size: 21pt;
+  font-weight: 900;
+  color: #000000;
+  line-height: 1.15;
+  margin-bottom: 4pt;
+  letter-spacing: -0.02em;
+}
+
+.cover-subtitle {
+  font-size: 9.5pt;
+  color: #222222;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.cover-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8pt;
+  margin-top: 9pt;
+  margin-bottom: 10pt;
+}
+
+.cover-meta-card {
+  background-color: #ffffff;
+  border: 1.5px solid #000000;
+  border-radius: 4pt;
+  padding: 6pt 8pt;
+}
+
+.cover-meta-row {
+  font-size: 8pt;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 2.5pt;
+}
+
+.cover-meta-label {
+  color: #444444;
+  font-weight: 700;
+}
+
+.cover-meta-value {
+  color: #000000;
+  font-weight: 800;
+}
+
+.executive-brief-green {
+  background-color: #f0fdf4;
+  border: 2px solid #16a34a;
+  border-radius: 4pt;
+  padding: 8pt 10pt;
+  margin-top: 7pt;
+  margin-bottom: 8pt;
+}
+
+.executive-brief-green h3 {
+  color: #166534;
+  margin-top: 0;
+  margin-bottom: 3.5pt;
+  font-size: 9.5pt;
+  font-weight: 800;
+}
+
+.executive-brief-green p {
+  font-size: 8pt;
+  color: #14532d;
+  line-height: 1.38;
+  margin-bottom: 3pt;
+}
+
+.executive-brief-red {
+  background-color: #fef2f2;
+  border: 2px solid #dc2626;
+  border-radius: 4pt;
+  padding: 7pt 10pt;
+  margin-top: 6pt;
+  margin-bottom: 8pt;
+}
+
+.executive-brief-red h3 {
+  color: #991b1b;
+  margin-top: 0;
+  margin-bottom: 3.5pt;
+  font-size: 9.5pt;
+  font-weight: 800;
+}
+
+.executive-brief-red p {
+  font-size: 8pt;
+  color: #7f1d1d;
+  line-height: 1.38;
+  margin-bottom: 3pt;
+}
+
+hr.divider {
+  border: none;
+  border-top: 1.5px solid #000000;
+  margin: 10pt 0;
+}
+</style>
+</head>
+<body>
+
+<!-- COVER / INTRO PAGE -->
+<div class="cover-page">
+  <div class="cover-header">
+    <div class="cover-eyebrow"><span class="dot-green"></span> Mobile Architecture Lab 4 (MAL4) &bull; MarTech Campaign Review &amp; Approval</div>
+    <div class="cover-title">Architecture Decision Records</div>
+    <div class="cover-subtitle">Formal Architectural Decisions, Decision Drivers, Alternatives Evaluation, Trade-Off Analyses, and Requirements Reconciliation (ADR-001 through ADR-006)</div>
+  </div>
+
+  <div class="cover-grid">
+    <div class="cover-meta-card">
+      <div class="cover-meta-row"><span class="cover-meta-label">Document ID:</span><span class="cover-meta-value">MAL4-ADR-v1.0</span></div>
+      <div class="cover-meta-row"><span class="cover-meta-label">Track:</span><span class="cover-meta-value">MarTech &mdash; Campaign Review &amp; Approval</span></div>
+      <div class="cover-meta-row"><span class="cover-meta-label">Author / Role:</span><span class="cover-meta-value">Architecture &amp; Engineering Lead</span></div>
+      <div class="cover-meta-row"><span class="cover-meta-label">Last Updated:</span><span class="cover-meta-value">2026-11-01</span></div>
+    </div>
+    <div class="cover-meta-card">
+      <div class="cover-meta-row"><span class="cover-meta-label">Document Status:</span><span class="cover-meta-value"><span class="badge badge-green">Accepted / Reviewed</span></span></div>
+      <div class="cover-meta-row"><span class="cover-meta-label">Primary Style:</span><span class="cover-meta-value">Modular Monolith / Clean-Lite</span></div>
+      <div class="cover-meta-row"><span class="cover-meta-label">Solution Design:</span><span class="cover-meta-value">MAL4-HLD.md / MAL4-LLD.md</span></div>
+      <div class="cover-meta-row"><span class="cover-meta-label">Reconciliation:</span><span class="cover-meta-value"><span class="badge badge-red">ADR-006 Tracked</span></span></div>
+    </div>
+  </div>
+
+  <div class="executive-brief-green">
+    <h3>Executive Architecture Brief &amp; Core Decision Governance</h3>
+    <p>This document formalizes the complete Architecture Decision Records (ADRs) for the MAL4 Campaign Review &amp; Approval platform. ADRs 001 through 005 establish the foundation of the current Solution Design (HLD/LLD): a Modular Monolith with Feature-First Clean-Architecture-lite layering, immutable full-snapshot campaign versioning, dual-check optimistic concurrency control, in-process domain events, and on-device role-based access control sized for a two-person team and hackathon timeline.</p>
+    <p>Every decision reflects explicit trade-offs: full Clean Architecture ceremony is pruned to preserve velocity while retaining domain isolation; distributed transaction machinery is rejected to fit a single-deployable mobile footprint; and persistence is isolated behind repository interfaces to maintain future evolution seams.</p>
+  </div>
+
+  <div class="executive-brief-red">
+    <h3>Architectural Divergence &amp; Reconciliation Governance (ADR-006)</h3>
+    <p><strong>Explicit Conflict Disclosure:</strong> Inspection of the requirements baseline (01-problem-understanding, 04-workflows, 06-data-design) identified that it now specifies a 3-stage sequential approval pipeline (Creative &rarr; Compliance &rarr; Finance) with SHA-256 snapshot hashing, server-side relational enforcement, and a transactional outbox table. ADR-006 formally tracks this discrepancy rather than papering over it, outlining three defensible resolution options for team adoption.</p>
+  </div>
+
+  <h2>ADR Status Summary Matrix</h2>
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ADR ID</th>
+          <th>Decision Title</th>
+          <th>Status</th>
+          <th>Architectural Scope &amp; Role</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ADR-001</strong></td>
+          <td>Overall Architecture Style</td>
+          <td><span class="badge badge-green">Accepted</span></td>
+          <td>Modular Monolith, Feature-First organization, Clean-lite layering, MVVM, Repository pattern</td>
+        </tr>
+        <tr>
+          <td><strong>ADR-002</strong></td>
+          <td>Campaign Versioning, Approval-Version Binding &amp; OCC</td>
+          <td><span class="badge badge-green">Accepted</span></td>
+          <td>Immutable snapshots, optimistic concurrency control, dual domain/repository conflict checks</td>
+        </tr>
+        <tr>
+          <td><strong>ADR-003</strong></td>
+          <td>In-Process Domain Events for Decoupling</td>
+          <td><span class="badge badge-green">Accepted</span></td>
+          <td>Post-commit domain events, non-blocking asynchronous notification dispatch</td>
+        </tr>
+        <tr>
+          <td><strong>ADR-004</strong></td>
+          <td>Authorization Boundary &amp; No-Backend Model</td>
+          <td><span class="badge badge-green">Accepted (Solution Design)</span></td>
+          <td>On-device RBAC &amp; Anti-Self-Approval; explicit disclosure of no-server boundary</td>
+        </tr>
+        <tr>
+          <td><strong>ADR-005</strong></td>
+          <td>Local-First Persistence Strategy</td>
+          <td><span class="badge badge-green">Accepted (Solution Design)</span></td>
+          <td>Drift over SQLite; atomic transaction across campaign state and audit log</td>
+        </tr>
+        <tr>
+          <td><strong>ADR-006</strong></td>
+          <td>Multi-Stage Approval &amp; Backend Reconciliation</td>
+          <td><span class="badge badge-red">Proposed &mdash; Unresolved</span></td>
+          <td>Reconciliation between 6-state Solution Design and 3-stage server-backed requirements</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="page-break"></div>
+
+<!-- SECTION 1: README & RELATIONSHIPS -->
+<h1>Section 1: Architecture Decision Records &mdash; Index &amp; Relationships</h1>
+<h1>Architecture Decision Records — Index</h1>
+<div class="callout-black"><strong>Owner:</strong> Architecture & Engineering Lead <strong>Last Updated:</strong> 2026-11-01</div>
+<p>This index lists every ADR for the MAL4 Campaign Review & Approval project, its status, and its relationships to the other ADRs and to the Solution Design (<code>docs/02-solution-design/</code>).</p>
+<h2>Status Summary</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>ADR</th><th>Title</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td><span class="doc-link">ADR-001</span></td><td>Overall Architecture Style — Modular Monolith, Feature-First, Clean-Architecture-Lite</td><td><span class="badge badge-green">Accepted</span></td></tr>
+<tr><td><span class="doc-link">ADR-002</span></td><td>Campaign Versioning, Approval-Version Binding, and Optimistic Concurrency</td><td><span class="badge badge-green">Accepted</span></td></tr>
+<tr><td><span class="doc-link">ADR-003</span></td><td>In-Process Domain Events for Side-Effect Decoupling</td><td><span class="badge badge-green">Accepted</span></td></tr>
+<tr><td><span class="doc-link">ADR-004</span></td><td>Authorization Enforcement Boundary and No-Backend Deployment Model</td><td><span class="badge badge-green"><span class="badge badge-green">Accepted</span> (Solution Design)</span></td></tr>
+<tr><td><span class="doc-link">ADR-005</span></td><td>Local-First Persistence Strategy (Drift over SQLite)</td><td><span class="badge badge-green"><span class="badge badge-green">Accepted</span> (Solution Design)</span></td></tr>
+<tr><td><span class="doc-link">ADR-006</span></td><td>Reconciliation of Multi-Stage Sequential Approval and Server-Side Enforcement with the Current Solution Design</td><td><strong><span class="badge badge-red"><span class="badge badge-red">Proposed</span> &mdash; Unresolved</span></strong></td></tr>
+</tbody>
+</table></div>
+<h2>How to Read This Collection</h2>
+<p>ADR-001 through ADR-005 document decisions that are genuinely reflected in the current, reviewed Solution Design (<code>docs/02-solution-design/HLD/MAL4-HLD.md</code>, <code>docs/02-solution-design/LLD/MAL4-LLD.md</code>). They are marked <strong><span class="badge badge-green">Accepted</span></strong> because that is an accurate description of what was decided and built into that design — not because every open question in the wider project is settled.</p>
+<p>ADR-004 and ADR-005 carry a qualifier because they are the two decisions most directly implicated by ADR-006: inspection of the requirements baseline (<code>docs/01-problem-understanding/</code>, <code>docs/04-workflows/</code>, <code>docs/06-data-design/</code>) found that it now specifies a 3-stage sequential approval pipeline with server-side, database-backed enforcement — materially different from what ADR-002 through ADR-005 describe. This was discovered during preparation of this ADR collection and is <strong>not</strong> a pre-existing, already-resolved part of the project; it is recorded as ADR-006, with status <strong><span class="badge badge-red">Proposed</span></strong>, precisely because it has not been resolved, and because silently rewriting ADR-002/004/005 to match the newer requirements would misrepresent the HLD/LLD as containing a decision it does not implement.</p>
+<h2>Relationships Between ADRs</h2>
+<pre class="code-block language-"><code>ADR-001 (architecture style)
+   ├── establishes the layering ADR-002, ADR-003, ADR-004, ADR-005 operate within
+   │
+   ├── ADR-002 (data consistency: versioning, approval binding, optimistic concurrency)
+   │      └── implemented via the persistence mechanism in ADR-005
+   │
+   ├── ADR-003 (event processing: in-process domain events)
+   │      └── exists because of the no-backend decision in ADR-004
+   │
+   ├── ADR-004 (authorization boundary, no backend)
+   │      └── directly drives ADR-005's local-first choice
+   │
+   └── ADR-005 (local-first persistence)
+
+ADR-006 (unresolved reconciliation)
+   └── contradicts ADR-002, ADR-003, ADR-004, and ADR-005 simultaneously —
+       tracks the conflict between the Solution Design and the current
+       requirements baseline; does not select a resolution</code></pre>
+<h2>Scope and Ownership Note</h2>
+<p>This index and all ADRs in this folder are owned and maintained by the Architecture & Engineering Lead. The requirements documentation referenced in ADR-006 (<code>docs/01-problem-understanding/</code>, <code>docs/04-workflows/</code>, <code>docs/06-data-design/</code>) is owned by the Domain Research & Requirements Lead and has not been modified as part of producing this ADR collection.</p>
+
+<div class="page-break"></div>
+
+<!-- SECTION 2: ADR-001 -->
+<h1>Section 2: ADR-001 &mdash; Overall Architecture Style</h1>
+<h1>ADR-001: Overall Architecture Style — Modular Monolith, Feature-First, Clean-Architecture-Lite</h1>
+<h2>Status</h2>
+<p><span class="badge badge-green">Accepted</span></p>
+<h2>Decision Date</h2>
+<p>2026-11-01</p>
+<h2>Context and Problem</h2>
+<p>The MAL4 Campaign Review & Approval mobile application needs an internal architecture that (a) keeps campaign lifecycle and approval invariants testable without a UI or database, (b) stays proportionate to a two-person team and a hackathon timeline, and (c) does not foreclose future evolution (a real backend, multi-stage approval — see ADR-006) by hard-coding assumptions throughout the codebase.</p>
+<p>Six candidate concepts were on the table — Layered Architecture, Clean Architecture, Feature-First organization, MVVM, the Repository pattern, and Event-Driven Architecture. Treating these as five or six competing "pick one" options would be a category error: each answers a different architectural question (deployment topology, code organization, internal dependency direction, presentation pattern, and inter-component communication, respectively). The real decision is which combination to adopt, and at what level of rigor.</p>
+<h2>Decision Drivers</h2>
+<ul>
+<li>Lifecycle and approval rules (campaign state transitions, version binding, self-review prevention) must be unit-testable in isolation — Testing & Observability is an explicitly weighted MAL4 evaluation criterion.</li>
+<li>Team size is two; any architecture with ceremony that doesn't pay for itself in testability or safety is a direct cost to delivery.</li>
+<li>No distributed infrastructure is justified at the confirmed scale (single mobile app, local-first).</li>
+<li>Persistence technology is not yet finalized (ADR-005) and the backend question is unresolved (ADR-006) — the internal architecture must not assume either answer.</li>
+<li>The solution must remain coherent if a feature boundary (e.g. multi-stage approval) is added later without a rewrite.</li>
+</ul>
+<h2>Considered Alternatives</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Alternative</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Classic Layered Architecture (global UI / business-logic / data-access layers)</td><td>Partition the whole codebase by technical layer type, shared across all features.</td></tr>
+<tr><td>Full Clean Architecture</td><td>Strict four-ring architecture (entities, use cases, interface adapters, frameworks) with DTOs and mappers at every boundary.</td></tr>
+<tr><td>Feature-First + Clean-Architecture-lite (<strong class="text-green">selected</strong>)</td><td>One feature module (<code>campaign</code>), internally layered (domain/application/infrastructure/presentation) by dependency direction only, without full Clean Architecture's ring ceremony.</td></tr>
+<tr><td>Full Event-Driven Architecture</td><td>All inter-component communication via published events on a broker or event bus.</td></tr>
+</tbody>
+</table></div>
+<h2>Evaluation and Comparison</h2>
+<p>Scored against this project's actual constraints (two-person team, hackathon timeline, Flutter/Dart, 5–50 users / 10–200 active campaigns per the confirmed non-functional requirements):</p>
+<div class="table-container"><table>
+<thead>
+<tr><th>Criterion</th><th>Classic Layered</th><th>Full Clean Architecture</th><th>Feature-First + Clean-lite (<strong class="text-green">selected</strong>)</th><th>Full Event-Driven</th></tr>
+</thead>
+<tbody>
+<tr><td>Separation of concerns</td><td>Medium — by technical type, not business capability</td><td><span class="badge badge-black">High</span></td><td><span class="badge badge-black">High</span></td><td><span class="badge badge-black">High</span> for decoupling, orthogonal to the others</td></tr>
+<tr><td>Complexity</td><td>Low</td><td><span class="badge badge-black">High</span></td><td>Low–Medium</td><td><span class="badge badge-black">High</span> if applied broadly</td></tr>
+<tr><td>Testability</td><td>Medium — global layers tangle unrelated features</td><td><span class="badge badge-black">High</span></td><td><span class="badge badge-black">High</span></td><td>Medium — async flows are harder to test</td></tr>
+<tr><td>Maintainability as the app grows</td><td>Low — unrelated features share layers</td><td><span class="badge badge-black">High</span>, at a ceremony cost</td><td><span class="badge badge-black">High</span></td><td>Low if overused — hides control flow</td></tr>
+<tr><td>Development speed for a 2-person team</td><td><span class="badge badge-black">High</span></td><td>Low</td><td><span class="badge badge-black">High</span></td><td>Low if applied broadly</td></tr>
+<tr><td>Suitability for Flutter</td><td>Medium</td><td>Medium — common but often overbuilt</td><td><span class="badge badge-black">High</span> — standard modern Flutter practice</td><td>Low for a single mobile app</td></tr>
+</tbody>
+</table></div>
+<h2>Selected Decision</h2>
+<p><strong>Modular Monolith</strong> (single deployable, no services) + <strong>Feature-First</strong> code organization (one <code>campaign</code> feature) + <strong>Clean-Architecture-lite</strong> internal layering (domain → application ← infrastructure, presentation depends on application only — dependency rule enforced, full ring/DTO ceremony not adopted) + <strong>MVVM</strong> in the presentation layer (state notifiers as the view-model) + <strong>Repository pattern</strong> as the persistence dependency-inversion seam + <strong>narrow, in-process domain events</strong> for decoupling side effects only.</p>
+<h2>Rationale</h2>
+<p>Full Clean Architecture's ceremony (strict rings, mapper classes at every boundary) is disproportionate to one feature and two developers — the <em>principle</em> that is actually valuable (dependency inversion, a domain with zero outward dependencies) is retained without the ceremony that doesn't pay for itself at this scale. Feature-First avoids coupling the campaign feature to any future feature through shared global layers. MVVM is the natural shape for a Riverpod/Bloc-style notifier regardless of this choice, and operates one level below it. Narrow in-process events are justified by a specific, named requirement (notification failures must never block or roll back a committed state transition) rather than adopted as a general pattern.</p>
+<h2>Positive Consequences</h2>
+<ul>
+<li>The domain (<code>Campaign</code> aggregate and its invariants) has zero outward dependencies and is testable without Flutter, a database, or a network connection.</li>
+<li>Persistence technology remains swappable without touching domain or application code (dependency inversion via repository interfaces).</li>
+<li>The module boundary (<code>Review & Approval Workflow</code>) that would need to absorb multi-stage approval, if that becomes the adopted scope (see ADR-006), is already isolated from Campaign Management, Audit, and Notification modules.</li>
+</ul>
+<h2>Negative Consequences and Trade-offs</h2>
+<ul>
+<li>Some boilerplate (use-case classes, repository interfaces, typed <code>Result</code> returns) versus directly calling a database from a widget — accepted because it is what buys the testability property above.</li>
+<li>"Clean-lite" risks boundary ambiguity without a strict reference implementation to point to; mitigated by writing explicit layer responsibility tables in the Solution Design rather than relying on convention alone.</li>
+<li>A Feature-First, single-feature codebase does not by itself prove the module boundaries are right for a second feature that doesn't exist yet — this is accepted as a reasonable bet given the project has exactly one feature in scope.</li>
+</ul>
+<h2>Risks and Mitigations</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+</thead>
+<tbody>
+<tr><td>Two developers interpret "Clean-lite" differently and the dependency rule erodes over time</td><td>Dependency-direction rules are stated explicitly per layer in the Solution Design, with a target lint rule to enforce <code>domain/</code> importing nothing from Flutter or the persistence library (not yet configured — no code exists yet)</td></tr>
+<tr><td>The architecture is scoped to a single-approval, local-first assumption that the current requirements baseline no longer matches (see ADR-006)</td><td>This ADR records the style decision independent of that question — Feature-First + Clean-lite does not itself prevent the module from being extended to a multi-stage pipeline or a real backend; the reconciliation is tracked separately in ADR-006, not silently folded in here</td></tr>
+</tbody>
+</table></div>
+<h2>Requirement Traceability</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Requirement</th><th>How this decision addresses it</th></tr>
+</thead>
+<tbody>
+<tr><td>Testing & Observability (MAL4 evaluation criterion)</td><td>Domain layer isolation is what makes lifecycle/approval logic unit-testable without a UI or database</td></tr>
+<tr><td>NFR-015 (workload scalability, single-instance sufficient)</td><td>Modular Monolith matches the confirmed scale; no distributed infrastructure is introduced</td></tr>
+<tr><td>Team-size constraint (2 engineers)</td><td>Feature-First + Clean-lite, not full Clean Architecture, keeps delivery cost proportionate</td></tr>
+</tbody>
+</table></div>
+<h2>Assumptions and Open Risks</h2>
+<p>This decision assumes the project remains a single-feature mobile application for its hackathon deliverable scope. It does not resolve whether the requirements baseline's 3-stage approval pipeline and server-side enforcement model (ADR-006) will be adopted — that is a separate, currently unresolved decision.</p>
+<h2>Related ADRs and Design Sections</h2>
+<ul>
+<li>Solution Design (HLD): <code>docs/02-solution-design/HLD/MAL4-HLD.md</code> §4.6 (Architecture Style and Rationale), §4.8 (Logical Architecture).</li>
+<li>Low-Level Design (LLD): <code>docs/02-solution-design/LLD/MAL4-LLD.md</code> §5.2 (module packaging).</li>
+<li>ADR-002 (data consistency), ADR-003 (event processing), ADR-004 (authorization boundary), ADR-005 (persistence) all operate inside the layering this ADR establishes.</li>
+<li>ADR-006 (multi-stage approval & server-side enforcement reconciliation) — unresolved; this ADR's decision is scoped to the current Solution Design, not the expanded requirements baseline.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 3: ADR-002 -->
+<h1>Section 3: ADR-002 &mdash; Data Consistency, Versioning &amp; Concurrency</h1>
+<h1>ADR-002: Campaign Versioning, Approval-Version Binding, and Optimistic Concurrency</h1>
+<h2>Status</h2>
+<p><span class="badge badge-green">Accepted</span></p>
+<h2>Decision Date</h2>
+<p>2026-11-01</p>
+<h2>Context and Problem</h2>
+<p>A campaign proposal is edited, submitted, reviewed, possibly revised, and eventually scheduled. Three failure modes must be architecturally prevented, not merely discouraged:</p>
+<ol>
+<li><strong>Post-approval drift</strong> — a reviewer approves one version of a campaign, but a different, later-modified version is the one that gets scheduled.</li>
+<li><strong>Stale approval</strong> — a reviewer acts on a version of the campaign that is no longer current, without realizing it has changed underneath them.</li>
+<li><strong>Lost updates</strong> — two concurrent writers (two sessions, or a marketer and an in-flight review decision) overwrite each other's changes silently.</li>
+</ol>
+<p>A decision was required on how campaign state is versioned, how an approval decision is bound to the exact content it evaluated, and how concurrent writes are detected and resolved.</p>
+<h2>Decision Drivers</h2>
+<ul>
+<li>Approval decisions must be defensible — "which exact version was approved" must be an unambiguous, machine-checked fact, not a convention.</li>
+<li>The confirmed non-functional requirements set (durability, concurrent-edit safety, version-approval binding) are explicit and critical-priority.</li>
+<li>Team size and timeline rule out heavyweight distributed-transaction machinery.</li>
+<li>The approval model assumed at the time this decision was made is single-reviewer (see ADR-006 for the later, unresolved multi-stage requirement).</li>
+</ul>
+<h2>Considered Alternatives</h2>
+<h3>Versioning</h3>
+<div class="table-container"><table>
+<thead>
+<tr><th>Alternative</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>In-place mutation</td><td>A campaign's current fields are edited directly; no separate version record exists.</td></tr>
+<tr><td>Event-sourcing delta diffs</td><td>Each edit is stored as a diff; current state is reconstructed by replaying diffs.</td></tr>
+<tr><td>Immutable full-snapshot versions (<strong class="text-green">selected</strong>)</td><td>Each submission or revision creates a complete, immutable snapshot of campaign content; the aggregate's "current version" is a pointer, not the editable record itself.</td></tr>
+</tbody>
+</table></div>
+<h3>Concurrency Control</h3>
+<div class="table-container"><table>
+<thead>
+<tr><th>Alternative</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Pessimistic locking</td><td>A reviewer or marketer acquires an exclusive lock on the campaign row while evaluating or editing it.</td></tr>
+<tr><td>Two-phase commit / distributed transaction coordination</td><td>A distributed transaction protocol coordinates writers across nodes.</td></tr>
+<tr><td>Optimistic concurrency via a version token (<strong class="text-green">selected</strong>)</td><td>Every write includes the version the writer believes is current; the write is rejected if the stored version has advanced.</td></tr>
+</tbody>
+</table></div>
+<h2>Evaluation and Comparison</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Criterion</th><th>In-place mutation</th><th>Event-sourcing diffs</th><th>Immutable snapshots (<strong class="text-green">selected</strong>)</th></tr>
+</thead>
+<tbody>
+<tr><td>Prevents post-approval drift</td><td>No — nothing stops the "current" record from changing after approval</td><td>Yes, in principle</td><td>Yes — an approval is bound to a specific, permanently fixed snapshot</td></tr>
+<tr><td>Implementation complexity</td><td>Low</td><td><span class="badge badge-black">High</span> (replay/projection logic, snapshot reconstruction)</td><td>Low–Medium</td></tr>
+<tr><td>Storage cost</td><td>Lowest</td><td>Medium</td><td><span class="badge badge-black">High</span>er (full copies), accepted — payloads are small</td></tr>
+<tr><td>Auditability</td><td>Weak — history is not naturally preserved</td><td>Strong</td><td>Strong — every version is a permanent, queryable record</td></tr>
+</tbody>
+</table></div>
+<div class="table-container"><table>
+<thead>
+<tr><th>Criterion</th><th>Pessimistic locking</th><th>Distributed 2PC</th><th>Optimistic concurrency (<strong class="text-green">selected</strong>)</th></tr>
+</thead>
+<tbody>
+<tr><td>Fit for a single-device, low-write-contention mobile app</td><td>Poor — holding a lock across a reviewer's "thinking time" is impractical</td><td>Not applicable — no distributed nodes exist to coordinate</td><td>Good</td></tr>
+<tr><td>Operational complexity</td><td>Medium (lock timeout/deadlock handling)</td><td><span class="badge badge-black">High</span></td><td>Low</td></tr>
+<tr><td>User experience on conflict</td><td>Blocked until lock released</td><td>N/A</td><td>Immediate, explicit conflict signal; caller reloads and retries</td></tr>
+</tbody>
+</table></div>
+<h2>Selected Decision</h2>
+<p><strong>Immutable full-snapshot versioning</strong> — a <code>CampaignVersion</code> is created only at two trigger points (submission, revision-resubmission), never on every edit. <strong>Optimistic concurrency</strong> via a <code>currentVersion</code> integer token compared at every write (<code>CampaignRepository.save(campaign, expectedVersion)</code>), and a <strong>separate, second check</strong> inside the domain aggregate (<code>approve</code>/<code>reject</code>/<code>requestChanges</code>) that compares the reviewer's believed-current version against the aggregate's actual current version before any <code>ApprovalRecord</code> is created — distinct from the repository-level write check, because the two answer different questions ("is this review stale" vs. "did someone else write first") and warrant different user-facing messages.</p>
+<h2>Rationale</h2>
+<p>Immutable snapshots make "which version was approved" a structural fact rather than a convention that can be silently violated. Optimistic concurrency fits the access pattern (infrequent conflicts, a single device, reviewers taking minutes-to-hours to decide) far better than pessimistic locking, which would have to hold a lock across exactly the kind of long "thinking time" this workflow involves.</p>
+<h2>Positive Consequences</h2>
+<ul>
+<li>An <code>ApprovalRecord.versionReviewed</code> field, once written, can never retroactively apply to a different version — enforced by always deriving it from the aggregate's own current version, never from caller-supplied input.</li>
+<li>Concurrent-write conflicts fail loudly and immediately (a typed <code>ConcurrentModificationError</code> or <code>StaleReviewError</code>), never silently.</li>
+<li>No lock-timeout tuning, deadlock detection, or distributed coordinator is required.</li>
+</ul>
+<h2>Negative Consequences and Trade-offs</h2>
+<ul>
+<li>A true race — two conflicting writes arriving within the same instant, before either has completed — is not fully closed by this mechanism alone; it only guarantees the <em>second</em> write to complete detects the conflict. A formal idempotency-key scheme for retried network requests is a related but distinct concern, not yet designed (see Risks below).</li>
+<li>Rejected writes require the caller to reload and resubmit — there is no automatic merge. This is a deliberate choice (silent merging of campaign fields is not safe), but it is a real UX cost under contention.</li>
+<li>Storing full snapshots rather than diffs costs more storage per version; accepted because campaign payloads are small and the simplicity/auditability gain outweighs it.</li>
+</ul>
+<h2>Risks and Mitigations</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+</thead>
+<tbody>
+<tr><td>No idempotency-key scheme exists yet for retried network/client requests (distinct from the version-conflict mechanism above)</td><td>Flagged explicitly as an open item in the Solution Design; not claimed as solved</td></tr>
+<tr><td>The requirements baseline now describes a 3-stage sequential approval pipeline with per-stage approval records bound to a cryptographic snapshot hash (SHA-256) — a materially different binding model than the single <code>ApprovalRecord</code> this ADR describes</td><td>See ADR-006 — this is an unresolved reconciliation, not silently absorbed into this ADR</td></tr>
+</tbody>
+</table></div>
+<h2>Requirement Traceability</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Requirement</th><th>How this decision addresses it</th></tr>
+</thead>
+<tbody>
+<tr><td>Approval state consistency, version-approval binding (critical-priority, non-functional requirements)</td><td>Immutable snapshots + version-token binding on <code>ApprovalRecord</code></td></tr>
+<tr><td>Concurrent-edit safety (high-priority, non-functional requirements)</td><td>Optimistic concurrency at the repository boundary</td></tr>
+<tr><td>Campaign versioning and revision functional requirements</td><td>Two version-creation trigger points, never on plain edits</td></tr>
+<tr><td>Material-change re-approval functional requirement</td><td>Any edit to an Approved campaign routes through an explicit invalidation step before the edit is applied, producing its own audit entry</td></tr>
+</tbody>
+</table></div>
+<h2>Assumptions and Open Risks</h2>
+<p>This ADR assumes a single <code>ApprovalRecord</code> per version (single-reviewer model). The requirements baseline's multi-stage pipeline would require this data model to extend to per-stage approval records bound to the same snapshot — an extension, not a contradiction, of the immutable-snapshot principle, but not yet designed. See ADR-006.</p>
+<h2>Related ADRs and Design Sections</h2>
+<ul>
+<li>Solution Design (HLD) §4.11 (Data Architecture), §4.14 (Reliability).</li>
+<li>Low-Level Design (LLD) §5.2.3–§5.2.4, §6.1–§6.4.</li>
+<li>ADR-001 (architecture style — domain layer owns these invariants).</li>
+<li>ADR-005 (persistence strategy — where the atomic state+audit commit is implemented).</li>
+<li>ADR-006 (multi-stage approval reconciliation — the open question of whether this single-<code>ApprovalRecord</code> model extends or is superseded).</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 4: ADR-003 -->
+<h1>Section 4: ADR-003 &mdash; In-Process Domain Events</h1>
+<h1>ADR-003: In-Process Domain Events for Side-Effect Decoupling</h1>
+<h2>Status</h2>
+<p><span class="badge badge-green">Accepted</span></p>
+<h2>Decision Date</h2>
+<p>2026-11-01</p>
+<h2>Context and Problem</h2>
+<p>A successful campaign state transition (e.g. an approval) should trigger a notification to the affected marketer. Notification delivery depends on an external service and can fail, time out, or be slow. A decision was required on how to connect "the state transition happened" to "a notification should be attempted" without letting the second concern compromise the first.</p>
+<h2>Decision Drivers</h2>
+<ul>
+<li>A confirmed, critical reliability requirement: a notification failure must never block or roll back an already-committed, authoritative state transition.</li>
+<li>The architecture has no backend and no message broker (see ADR-004) — any mechanism must work in a single process.</li>
+<li>Team size and timeline rule out operating external messaging infrastructure.</li>
+</ul>
+<h2>Considered Alternatives</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Alternative</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Synchronous inline dispatch</td><td>The use case calls the notification service directly, in the same call path as the state transition, before returning to the caller.</td></tr>
+<tr><td>External message broker / queue</td><td>State transitions publish to a broker (e.g. a managed queue service); a separate consumer processes notifications.</td></tr>
+<tr><td>In-process domain events (<strong class="text-green">selected</strong>)</td><td>The use case emits a plain in-memory event object after its transaction commits; a subscriber (<code>NotificationGateway</code>) consumes it asynchronously within the same process.</td></tr>
+</tbody>
+</table></div>
+<h2>Evaluation and Comparison</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Criterion</th><th>Synchronous inline</th><th>External broker</th><th>In-process domain events (<strong class="text-green">selected</strong>)</th></tr>
+</thead>
+<tbody>
+<tr><td>Isolates notification failure from the core transaction</td><td>No — a failure or timeout in the inline call can delay or fail the user-facing response</td><td>Yes</td><td>Yes</td></tr>
+<tr><td>Operational footprint</td><td>None extra</td><td>A managed broker/queue to provision, configure, and monitor</td><td>None extra — plain in-process objects</td></tr>
+<tr><td>Fit for a single-device, no-backend architecture</td><td>Workable but risky</td><td>Disproportionate — no distributed consumers exist to justify it</td><td>Good fit</td></tr>
+<tr><td>Delivery guarantee sophistication</td><td>None beyond "it happened or it didn't"</td><td>Strong (broker-managed retries, dead-lettering)</td><td>Weaker — retry/backoff must be hand-built; acceptable at this scale</td></tr>
+</tbody>
+</table></div>
+<h2>Selected Decision</h2>
+<p>Use cases emit a typed, in-process domain event (e.g. <code>CampaignApproved</code>) only <strong>after</strong> their database transaction has committed. <code>NotificationGateway</code> subscribes to these events and attempts delivery asynchronously; any failure is logged and retried internally, and is never surfaced back to the use case or the end user as a transaction failure.</p>
+<h2>Rationale</h2>
+<p>The ordering is the entire point: emitting the event after commit, not before or as part of the same transaction, is what structurally guarantees a notification failure cannot roll back state that has already been durably recorded. A broker is not justified — there is exactly one consumer (<code>NotificationGateway</code>) and no distributed producers/consumers to coordinate.</p>
+<h2>Positive Consequences</h2>
+<ul>
+<li>The reliability requirement (notification failure never blocks the write path) is satisfied by construction, not by convention — the event literally does not exist until after the write has succeeded.</li>
+<li>No additional infrastructure to operate, monitor, or pay for.</li>
+<li>The event types form a natural, compiler-checked (sealed-class) catalog of "things that happen" in the domain, useful for future consumers beyond notifications (e.g. analytics) without touching use-case code.</li>
+</ul>
+<h2>Negative Consequences and Trade-offs</h2>
+<ul>
+<li>Retry/backoff logic for failed notification delivery must be hand-built rather than inherited from broker infrastructure; the exact backoff policy is not yet finalized.</li>
+<li>If the application process terminates between commit and successful notification delivery, an in-flight notification may be lost — there is no durable outbox table in the current design. This is a known, stated limitation, not a hidden one.</li>
+<li>This mechanism only works because everything runs in one process; it does not generalize if a real backend is introduced (see ADR-004/ADR-006) without further design work.</li>
+</ul>
+<h2>Risks and Mitigations</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+</thead>
+<tbody>
+<tr><td>A notification can be lost if the process dies before delivery (no durable outbox)</td><td>Stated explicitly as an open implementation detail in the Solution Design; an outbox table is a candidate future addition, not yet designed</td></tr>
+<tr><td>The requirements baseline describes a durable, database-backed Transactional Outbox pattern (an <code>outbox_events</code> table with status tracking and exponential backoff) — a stronger durability guarantee than this ADR's in-memory event bus provides</td><td>This is part of the broader backend/architecture reconciliation tracked in ADR-006, not silently adopted here</td></tr>
+</tbody>
+</table></div>
+<h2>Requirement Traceability</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Requirement</th><th>How this decision addresses it</th></tr>
+</thead>
+<tbody>
+<tr><td>Partial-failure recovery (notification failure isolation — high-priority, non-functional requirement)</td><td>Event emission strictly after commit; failures absorbed entirely within <code>NotificationGateway</code></td></tr>
+<tr><td>Lifecycle notifications functional requirement</td><td>Domain events map 1:1 to the notification triggers the requirement specifies</td></tr>
+</tbody>
+</table></div>
+<h2>Assumptions and Open Risks</h2>
+<p>This ADR assumes in-memory delivery loss on process termination is an acceptable risk for the current deliverable scope. If the requirements baseline's durable-outbox model (ADR-006) is adopted, this ADR would need to be superseded, not silently reinterpreted.</p>
+<h2>Related ADRs and Design Sections</h2>
+<ul>
+<li>Solution Design (HLD) §4.10 (Interface and Communication Architecture), §4.14 (Reliability).</li>
+<li>Low-Level Design (LLD) §5.2.6 (Notification Management), Figure 3 (Error Recovery Sequence).</li>
+<li>ADR-001 (architecture style — this is the one sanctioned use of event-driven communication, narrowly scoped).</li>
+<li>ADR-004 (no-backend deployment boundary — why a broker was not considered viable).</li>
+<li>ADR-006 (the requirements baseline's durable outbox pattern is a stronger guarantee than this ADR provides — unresolved).</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 5: ADR-004 -->
+<h1>Section 5: ADR-004 &mdash; Authorization Boundary &amp; Deployment Model</h1>
+<h1>ADR-004: Authorization Enforcement Boundary and No-Backend Deployment Model</h1>
+<h2>Status</h2>
+<p><span class="badge badge-green"><span class="badge badge-green">Accepted</span> (Solution Design)</span> — <strong>see ADR-006 for an unresolved conflict with the requirements baseline</strong></p>
+<h2>Decision Date</h2>
+<p>2026-11-01</p>
+<h2>Context and Problem</h2>
+<p>Role-based access control (only a Marketer may create/edit/submit; only a Reviewer, and never the submitter, may approve/reject/request changes) must be enforced somewhere that cannot be bypassed by a modified or malicious client. The confirmed non-functional requirements state this in explicit client-server terms: authentication must reject unauthenticated requests, and "authorisation must be enforced server-side, not only in the client." No backend process exists or is planned for the current Solution Design. A decision was required on where enforcement actually happens, and how to be honest about what that does and does not guarantee.</p>
+<h2>Decision Drivers</h2>
+<ul>
+<li>The requirement is phrased in literal server-side terms; the architecture has no server.</li>
+<li>A 2-person team and hackathon timeline make standing up and operating a real backend a significant, separate undertaking.</li>
+<li>No prior decision in this project (ADR-001 or otherwise) establishes that a backend exists — it must not be silently assumed.</li>
+<li>Judges and reviewers will reasonably ask how authorization can be trusted without a server.</li>
+</ul>
+<h2>Considered Alternatives</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Alternative</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Build a minimal real backend for the hackathon deliverable</td><td>Stand up an actual server process (even a thin one) that performs authentication/authorization independently of the mobile client.</td></tr>
+<tr><td>On-device enforcement, presented as equivalent to server-side</td><td>Enforce checks in application/domain code on-device, without acknowledging the gap against the literal requirement.</td></tr>
+<tr><td>On-device enforcement, gap stated explicitly (<strong class="text-green">selected</strong>)</td><td>Enforce checks in application/domain code on-device; explicitly document that this does not satisfy a literal production security reading of "server-side," as an accepted, stated limitation.</td></tr>
+</tbody>
+</table></div>
+<h2>Evaluation and Comparison</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Criterion</th><th>Real backend</th><th>On-device, gap hidden</th><th>On-device, gap stated (<strong class="text-green">selected</strong>)</th></tr>
+</thead>
+<tbody>
+<tr><td>Literally satisfies NFR-008/009</td><td>Yes</td><td>No (same as the left column — the gap doesn't disappear by not mentioning it)</td><td>No, and says so</td></tr>
+<tr><td>Proportionate to a 2-person hackathon team</td><td>No — materially increases scope (hosting, auth infrastructure, API design, deployment)</td><td>Same engineering cost as the selected option</td><td>Same engineering cost — the only difference is honesty</td></tr>
+<tr><td>Defensible under judge cross-examination</td><td>Strong, if actually built</td><td>Weak — an unstated gap discovered by a reviewer reads as an oversight</td><td>Stronger than "hidden" — demonstrates the team understands the boundary and made a conscious, reasoned trade-off</td></tr>
+<tr><td>Prevents a modified client from bypassing checks that <em>are</em> enforced (self-review, role, version)</td><td>N/A (not selected)</td><td>Only as strong as the on-device checks, regardless of framing</td><td>Same technical strength; difference is only in disclosure</td></tr>
+</tbody>
+</table></div>
+<h2>Selected Decision</h2>
+<p>Authorization and self-review checks are enforced in the <strong>Application and Domain layers</strong>, on-device, in the same process as the UI — never relying on the UI merely hiding a button. This is explicitly documented as satisfying the <em>intent</em> of the requirement (checks cannot be bypassed by skipping client-side validation alone) but <strong>not</strong> a literal production security reading of "server-side enforcement," because there is no separate process boundary between "client" and "server" for a modified client binary to be unable to cross.</p>
+<h2>Rationale</h2>
+<p>Given no backend exists in this deliverable, the only real choice is whether to state the resulting gap plainly or not — the technical strength of the enforcement is identical either way. Stating it plainly is the only choice consistent with this project's standard of not claiming guarantees that don't hold, and it is also the more defensible position in an architecture review: it demonstrates the team identified the exact boundary of what their design can and cannot guarantee, rather than having it discovered by a reviewer.</p>
+<h2>Positive Consequences</h2>
+<ul>
+<li>Self-review prevention, role checks, and version-binding checks are enforced in domain code that a UI cannot be coerced into skipping — a materially stronger guarantee than UI-only validation, even without a server.</li>
+<li>The gap against the literal requirement is recorded once, precisely, and consistently, rather than being implicitly re-discovered (and possibly mischaracterized) in multiple places.</li>
+<li>The <code>AuthProvider</code> interface already exists as a seam; introducing a real Identity Provider behind it later does not require rewriting use cases.</li>
+</ul>
+<h2>Negative Consequences and Trade-offs</h2>
+<ul>
+<li>A sufficiently motivated attacker with a modified client binary could, in principle, bypass on-device checks — there is no process boundary preventing it. This is the core accepted limitation.</li>
+<li>"Enforced in the domain layer" is not equivalent to "enforced server-side" for any production deployment with real adversarial users; this architecture, as currently designed, is not production-ready from a security standpoint without a backend.</li>
+</ul>
+<h2>Risks and Mitigations</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+</thead>
+<tbody>
+<tr><td>A judge or reviewer treats this as disqualifying rather than as a scoped, disclosed trade-off</td><td>The limitation is stated consistently across the Solution Design, this ADR, and the Architecture Defence package — never hidden, always paired with the specific architectural reason (team size, timeline, proportionality)</td></tr>
+<tr><td>The requirements baseline explicitly and repeatedly assumes a server-side API (HTTP status codes, a <code>Campaign API Gateway</code>, database-level <code>UPDATE ... WHERE version = :expected_version</code> enforcement)</td><td>This is the central subject of ADR-006 — not resolved by this ADR, which documents only what the current Solution Design actually built</td></tr>
+</tbody>
+</table></div>
+<h2>Requirement Traceability</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Requirement</th><th>How this decision addresses it</th></tr>
+</thead>
+<tbody>
+<tr><td>Authentication (must reject unauthenticated requests)</td><td><code>AuthProvider.currentUser()</code> gate before any use case proceeds</td></tr>
+<tr><td>Authorization enforcement, self-review prevention (must not rely on the client alone)</td><td>Checked in Application layer and defensively again in the Domain aggregate — never only in Presentation</td></tr>
+<tr><td>"Server-side" enforcement (literal requirement)</td><td><strong>Not fully satisfied</strong> — explicitly documented as the accepted gap this ADR records</td></tr>
+</tbody>
+</table></div>
+<h2>Assumptions and Open Risks</h2>
+<p>This ADR assumes the hackathon deliverable's threat model does not require defending against a malicious, modified client — an assumption that would not hold in a production deployment. It assumes no backend will be introduced for the current deliverable; if that assumption changes (ADR-006), this ADR would be superseded, not silently reinterpreted.</p>
+<h2>Related ADRs and Design Sections</h2>
+<ul>
+<li>Solution Design (HLD) §4.13 (Security Architecture), §4.15 (Deployment and Runtime Architecture — "The NFR-008/009 Gap, Stated Plainly").</li>
+<li>Low-Level Design (LLD) §5.2.1 (Authentication & Authorization module).</li>
+<li>ADR-001 (architecture style — the Application/Domain layering this decision relies on).</li>
+<li>ADR-005 (persistence strategy — the companion decision on where data lives).</li>
+<li>ADR-006 (multi-stage approval & server-side enforcement reconciliation) — the requirements baseline's server-side RBAC expectation is not met by this ADR and is tracked there as unresolved.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 6: ADR-005 -->
+<h1>Section 6: ADR-005 &mdash; Persistence Strategy</h1>
+<h1>ADR-005: Local-First Persistence Strategy (Drift over SQLite)</h1>
+<h2>Status</h2>
+<p><span class="badge badge-green"><span class="badge badge-green">Accepted</span> (Solution Design)</span> — <strong>see ADR-006 for an unresolved conflict with the requirements baseline</strong></p>
+<h2>Decision Date</h2>
+<p>2026-11-01</p>
+<h2>Context and Problem</h2>
+<p>Campaign state, version history, approval records, and an append-only audit trail must be durably persisted, with atomic commits across the state change and its audit entry. A persistence technology and topology (local-only vs. backend-synced) was required, consistent with the no-backend decision in ADR-004.</p>
+<h2>Decision Drivers</h2>
+<ul>
+<li>Durability and transactional atomicity requirements (a state change and its audit entry must commit together or not at all).</li>
+<li>No backend exists for the current deliverable (ADR-004) — ruling out a remote database as the primary store.</li>
+<li>FR-015's requirement that audit entries be queryable by campaign, actor, and time range favors a relational query model.</li>
+<li>Team size and timeline.</li>
+</ul>
+<h2>Considered Alternatives</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Alternative</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>Raw SQLite</td><td>Direct SQL against a local SQLite file, no type-safety layer.</td></tr>
+<tr><td>Isar (NoSQL/object database)</td><td>Local object-store database, schema-less-leaning, optimized for object graphs rather than relational joins.</td></tr>
+<tr><td>Backend API + managed database</td><td>A remote relational database (e.g. PostgreSQL) accessed via a backend API.</td></tr>
+<tr><td>Drift over SQLite (<strong class="text-green">selected</strong>)</td><td>A type-safe, code-generated query layer over local SQLite, with migrations and reactive streams.</td></tr>
+</tbody>
+</table></div>
+<h2>Evaluation and Comparison</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Criterion</th><th>Raw SQLite</th><th>Isar</th><th>Backend API + DB</th><th>Drift over SQLite (<strong class="text-green">selected</strong>)</th></tr>
+</thead>
+<tbody>
+<tr><td>Type safety at compile time</td><td>No</td><td>Partial</td><td>N/A (network boundary)</td><td>Yes</td></tr>
+<tr><td>Fit for relational joins (campaign → versions → approvals → audit)</td><td>Workable, hand-written</td><td>Weaker — object-store model, not natively relational</td><td>Strong</td><td>Strong</td></tr>
+<tr><td>Transactional atomicity for state+audit commit</td><td>Yes, manually</td><td>Yes</td><td>Yes, but across a network boundary</td><td>Yes, natively</td></tr>
+<tr><td>Requires a backend to exist</td><td>No</td><td>No</td><td>Yes — contradicts ADR-004</td><td>No</td></tr>
+<tr><td>Engineering cost for a 2-person team</td><td>Medium (more hand-written SQL, more defect risk)</td><td>Low</td><td><span class="badge badge-black">High</span> (hosting, API design, auth infra)</td><td>Low–Medium</td></tr>
+<tr><td>Supports FR-015's query-by-campaign/actor/time-range requirement</td><td>Yes, manually indexed</td><td>Workable but less natural</td><td>Yes</td><td>Yes, with standard SQL indexes</td></tr>
+</tbody>
+</table></div>
+<h2>Selected Decision</h2>
+<p><strong>Local-first persistence using Drift over SQLite.</strong> The campaign-state write and its corresponding audit-entry write commit in a single local database transaction. No remote database or backend API is part of the current Solution Design.</p>
+<h2>Rationale</h2>
+<p>Given ADR-004 already rules out a backend for this deliverable, the backend-API alternative is not actually available without reopening that decision — it is listed here for completeness of comparison, not as a live option. Between the remaining local options, Drift's relational model fits the domain's actual shape (one campaign has many versions, each may have one approval record, every transition has an audit entry) better than an object-store, and its type safety and migration support reduce defect risk for a 2-person team without materially increasing build complexity over raw SQLite.</p>
+<h2>Positive Consequences</h2>
+<ul>
+<li>Atomic state+audit commit is native to the chosen engine, not something the application has to coordinate by hand.</li>
+<li>Offline operation is the baseline mode, not a special case, because there is no network dependency in the core workflow.</li>
+<li>Drift's in-memory test database makes repository-level testing straightforward without a real file.</li>
+</ul>
+<h2>Negative Consequences and Trade-offs</h2>
+<ul>
+<li><strong>No cross-device synchronization.</strong> Two installations of the app, on two devices, have no mechanism to see each other's data. This is a hard limitation, stated explicitly, not an oversight.</li>
+<li>No backup/restore or disaster-recovery infrastructure exists at this layer; SQLite's WAL-mode durability covers on-device crash-safety only, not loss of the device itself.</li>
+<li>Multi-tenancy is not addressed (consistent with the project's single-tenant scope assumption).</li>
+</ul>
+<h2>Risks and Mitigations</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Risk</th><th>Mitigation</th></tr>
+</thead>
+<tbody>
+<tr><td>A stakeholder expects multi-device support from "persistence" without reading the stated limitation</td><td>Stated consistently across the Solution Design, this ADR, and the Architecture Defence package</td></tr>
+<tr><td>The requirements baseline's data design specifies a relational backend schema (PostgreSQL-style, with table partitioning, an <code>outbox_events</code> table, and an <code>idempotency_records</code> table) that assumes a server process this ADR does not provide</td><td>Tracked in ADR-006 as an unresolved reconciliation — this ADR documents only the current Solution Design's local-first decision</td></tr>
+</tbody>
+</table></div>
+<h2>Requirement Traceability</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Requirement</th><th>How this decision addresses it</th></tr>
+</thead>
+<tbody>
+<tr><td>Durability, atomic audit/state commit (critical-priority, non-functional requirements)</td><td>Single local transaction per use-case execution</td></tr>
+<tr><td>Audit queryability by campaign/actor/time range (functional requirement)</td><td>Relational schema with standard indexes</td></tr>
+<tr><td>No distributed infrastructure disproportionate to team/timeline</td><td>Local-only engine, no hosting or network dependency</td></tr>
+</tbody>
+</table></div>
+<h2>Assumptions and Open Risks</h2>
+<p>This ADR assumes multi-device synchronization is out of scope for the current deliverable. If the requirements baseline's server-backed data design (ADR-006) is adopted instead, this ADR would be superseded, not silently reinterpreted — the physical schema itself remains the responsibility of the data-design documentation regardless of outcome.</p>
+<h2>Related ADRs and Design Sections</h2>
+<ul>
+<li>Solution Design (HLD) §4.7 (Technology Architecture), §4.11 (Data Architecture), §4.15 (Deployment and Runtime Architecture).</li>
+<li>Low-Level Design (LLD) §5.2.3.G, §6.4 (Database Specifications, Concurrent Modification).</li>
+<li>ADR-002 (data consistency — the atomic commit this ADR implements).</li>
+<li>ADR-004 (no-backend decision — the direct driver of this choice).</li>
+<li>ADR-006 (the requirements baseline's server-backed data design — unresolved against this ADR).</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 7: ADR-006 -->
+<h1>Section 7: ADR-006 &mdash; Multi-Stage &amp; Backend Reconciliation</h1>
+<h1>ADR-006: Reconciliation of Multi-Stage Sequential Approval and Server-Side Enforcement with the Current Solution Design</h1>
+<h2>Status</h2>
+<p><strong><span class="badge badge-red"><span class="badge badge-red">Proposed</span> &mdash; Unresolved Conflict</span></strong></p>
+<p>This ADR does not select an option. It exists to document a significant discrepancy discovered during architecture-decision documentation, so it is tracked explicitly rather than silently resolved in either direction.</p>
+<h2>Decision Date</h2>
+<p>Discovered 2026-11-01. Not yet resolved.</p>
+<h2>Context and Problem</h2>
+<p>The Solution Design (<code>docs/02-solution-design/</code>, HLD/LLD) implements: a <strong>single-reviewer approval model</strong> (one Reviewer role, one <code>ApprovalRecord</code> per version), <strong>on-device, no-backend enforcement</strong> (ADR-004), and <strong>local-first persistence</strong> with no server-backed schema (ADR-005).</p>
+<p>During preparation of this ADR collection, inspection of <code>docs/01-problem-understanding/</code>, <code>docs/04-workflows/</code>, and <code>docs/06-data-design/</code> found that these documents — marked <strong>"Document Status: Approved v1.0"</strong> and with the relevant open questions marked <strong>"<span class="badge badge-green">Resolved</span>"</strong> — now specify a materially different architecture:</p>
+<ul>
+<li>A <strong>3-stage sequential approval pipeline</strong>: Stage 1 (Creative, role <code>ST-002a</code>) → Stage 2 (Compliance, role <code>ST-002b</code>) → Stage 3 (Finance, role <code>ST-002c</code>), each a distinct reviewer role with its own <code>StageApproval</code> record, all three required before a campaign reaches <code>Approved</code>.</li>
+<li><strong>Cryptographic snapshot binding</strong>: a SHA-256 digest (<code>snapshot_hash</code>) of each campaign version, referenced by every stage approval record.</li>
+<li><strong>Server-side enforcement via a relational backend</strong>: SQL <code>UPDATE ... WHERE version = :expected_version</code> optimistic-concurrency statements, HTTP status codes (<code>400</code>, <code>409</code>), a "Campaign API Gateway," and a full physical schema (<code>campaigns</code>, <code>campaign_snapshots</code>, <code>stage_approvals</code>, <code>review_decisions</code>, <code>audit_log</code>, <code>outbox_events</code>, <code>idempotency_records</code>, with partitioning and indexing strategy).</li>
+<li>A <strong>Transactional Outbox pattern with a durable <code>outbox_events</code> table and exponential-backoff worker</strong>, rather than this project's in-process event bus (ADR-003).</li>
+<li>An <strong>HTTP-header-based idempotency-key scheme</strong> (<code>Idempotency-Key</code> header, a dedicated <code>idempotency_records</code> table), which ADR-002 explicitly flagged as not yet designed in the current Solution Design.</li>
+</ul>
+<p>This is traceable directly to the functional requirements, non-functional requirements, and stakeholders documentation (e.g. functional-requirements.md's OQ-009, originally "Open" with an "Initial recommendation: single-approval model," now marked "<span class="badge badge-green">Resolved</span>" in favor of the 3-stage pipeline). The requirements baseline changed after the Solution Design was built against its earlier version, and the two were never reconciled.</p>
+<h2>Why This Matters</h2>
+<p>This is not a minor terminology mismatch. It affects:</p>
+<ul>
+<li><strong>The campaign state model</strong> — <code>PENDING REVIEW</code> is a single state in the current HLD/LLD; the requirements baseline subdivides it into three sequential sub-stages with their own role gates and transition rules.</li>
+<li><strong>The data model</strong> — a single <code>ApprovalRecord</code> per version (ADR-002) versus up to three <code>StageApproval</code> records per version, each independently bound to a snapshot hash.</li>
+<li><strong>The deployment model</strong> — no backend (ADR-004) versus an explicit, detailed server-side API and relational database design.</li>
+<li><strong>The concurrency mechanism</strong> — in-process optimistic concurrency (ADR-002) versus the same principle expressed as SQL against a networked database, plus an HTTP-level idempotency-key scheme ADR-002 explicitly marks as not yet designed.</li>
+<li><strong>The side-effect mechanism</strong> — an in-process event bus (ADR-003) versus a durable, database-backed Transactional Outbox.</li>
+</ul>
+<p>Every ADR in this collection that touches these areas (ADR-002, ADR-003, ADR-004, ADR-005) has been written to accurately describe what the current Solution Design actually contains, with an explicit cross-reference to this ADR wherever the requirements baseline now diverges. None of them were silently rewritten to match the newer requirements, because doing so would misrepresent the HLD/LLD as already reflecting a decision it does not implement — and this task's scope does not permit modifying the HLD/LLD to make that true.</p>
+<h2>Options for Resolution (Not Yet Decided)</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Option</th><th>Description</th><th>Implication</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>A. Extend the Solution Design to the 3-stage/backend model</strong></td><td>Formally update <code>docs/02-solution-design/</code> (HLD/LLD) to adopt the sequential pipeline, cryptographic binding, and server-side architecture the requirements now specify.</td><td>Materially larger scope: a backend must be designed and built, not just the mobile client. <span class="badge badge-black">High</span>est fidelity to current requirements; highest delivery risk for a 2-person team.</td></tr>
+<tr><td><strong>B. Scope the requirements back to match the delivered architecture</strong></td><td>Formally revise the requirements baseline (with the Domain Research & Requirements Lead) to reduce to single-approval, local-first scope for the hackathon deliverable, with the 3-stage/backend model explicitly deferred as a documented future-evolution target.</td><td>Lowest delivery risk; requires the team to jointly agree the requirements update was premature or aspirational for this deliverable's actual scope.</td></tr>
+<tr><td><strong>C. Present a two-tier story: MVP architecture now, target architecture documented separately</strong></td><td>Keep the current Solution Design as the implemented/defensible MVP, and keep the requirements baseline's 3-stage/backend model as an explicitly labeled "target production architecture" that the current design's extension points (module boundaries, repository interfaces) are built to support — without claiming it is built.</td><td>Requires discipline to keep the two framings clearly separated in every document and in the live defence; risks judges perceiving it as an excuse rather than a plan, if not presented carefully.</td></tr>
+</tbody>
+</table></div>
+<p>No option is selected here. This ADR's purpose is to make the conflict visible and force a conscious choice, not to make that choice unilaterally within the scope of this ADR/defence documentation task.</p>
+<h2>What Is Not In Scope for This ADR</h2>
+<ul>
+<li>Modifying <code>docs/02-solution-design/</code> (HLD/LLD) — out of scope for the task that produced this ADR collection.</li>
+<li>Modifying <code>docs/01-problem-understanding/</code>, <code>docs/04-workflows/</code>, or <code>docs/06-data-design/</code> — teammate-owned.</li>
+<li>Silently picking Option A, B, or C and writing the rest of the ADR/defence package as if it had been decided.</li>
+</ul>
+<h2>Recommendation (Non-Binding)</h2>
+<p>Given the explicit team-size and timeline constraints that motivated ADR-001, ADR-004, and ADR-005, <strong>Option C</strong> is the most defensible starting position for the hackathon presentation itself — it allows the team to present a working, reasoned, honestly-scoped architecture while demonstrating awareness of the full target requirement. However, <strong>Option A or B must still be formally chosen</strong> before the project's documentation set can be considered internally consistent; Option C is a presentation strategy, not a substitute for that decision.</p>
+<h2>Requirement Traceability</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Requirement source</th><th>Status relative to current Solution Design</th></tr>
+</thead>
+<tbody>
+<tr><td><code>01-problem-understanding/functional-requirements.md</code> OQ-009 ("<span class="badge badge-green">Resolved</span>": 3-stage pipeline)</td><td>Not implemented in the current HLD/LLD</td></tr>
+<tr><td><code>01-problem-understanding/non-functional-requirements.md</code> (server-side enforcement)</td><td>Acknowledged as unmet in ADR-004, not newly discovered here</td></tr>
+<tr><td><code>04-workflows/campaign-lifecycle.md</code>, <code>approval-workflow.md</code>, <code>revision-workflow.md</code>, <code>failure-recovery.md</code> (all "Approved v1.0")</td><td>Describe a server-backed, 3-stage architecture not reflected in the current Solution Design</td></tr>
+<tr><td><code>06-data-design/database-schema.md</code>, <code>domain-model.md</code></td><td>Describe a relational backend schema with tables (<code>stage_approvals</code>, <code>outbox_events</code>, <code>idempotency_records</code>) that do not exist in the current persistence design (ADR-005)</td></tr>
+</tbody>
+</table></div>
+<h2>Related ADRs and Design Sections</h2>
+<ul>
+<li>ADR-001 (architecture style) — the module boundaries this ADR's resolution would extend or replace.</li>
+<li>ADR-002 (data consistency) — the single-<code>ApprovalRecord</code> model this would need to become multi-stage.</li>
+<li>ADR-003 (event processing) — the in-process event bus this would need to become a durable outbox.</li>
+<li>ADR-004 (authorization boundary) — the no-backend decision this directly contradicts.</li>
+<li>ADR-005 (persistence strategy) — the local-first decision this directly contradicts.</li>
+<li>Architecture Defence: <code>docs/08-architecture-defence/risks-and-limitations.md</code> and <code>docs/08-architecture-defence/anticipated-questions.md</code> present this conflict to judges honestly rather than concealing it.</li>
+</ul>
+
+<div class="page-break"></div>
+
+<!-- SECTION 8: ARCHITECTURE DEFENCE (ADR DEFENCE) -->
+<h1>Section 8: Architecture Decision Defence &mdash; Spoken-Ready Notes</h1>
+<div class="callout-black">
+  <strong>Source:</strong> <code>docs/08-architecture-defence/adr-defence.md</code> &bull; Rehearsed, cross-examination-ready talking points covering core decisions, alternatives rejected, technical trade-offs, limitations, and revisit criteria.
+</div>
+<h1>Architecture Decision Defence</h1>
+<div class="callout-black"><strong>Purpose:</strong> For each ADR, the condensed defence material — why this and not the alternative, what it costs, and under what conditions the team would revisit it. Full reasoning and comparison tables live in the ADRs themselves (<code>docs/03-architecture-decisions/</code>); this document is the rehearsed, spoken-ready version.</div>
+<hr class="divider" />
+<h2>ADR-001 — Architecture Style</h2>
+<p><strong>Decision summary:</strong> Modular Monolith, Feature-First organization, Clean-Architecture-lite internal layering, MVVM presentation, narrow in-process domain events.</p>
+<p><strong>Why this approach:</strong> The problem needs one property above all — business rules that can't be bypassed or silently violated — and that comes from isolating the domain, not from distributing the system. A single feature, two developers, and a hackathon timeline make every unit of architectural ceremony something that has to earn its cost in testability or safety.</p>
+<p><strong>Alternatives rejected:</strong> Full Clean Architecture (too much ring/mapper ceremony for one aggregate and two people); classic layered architecture (couples unrelated features through shared global layers — a problem this project doesn't have yet, but the style still has it); full event-driven architecture (no distributed producers/consumers exist to justify it).</p>
+<p><strong>Technical trade-offs:</strong> Some use-case and repository boilerplate versus calling the database straight from a widget — accepted because it is exactly what buys domain testability.</p>
+<p><strong>Limitations:</strong> "Clean-lite" is not a strict, named reference architecture — boundary discipline depends on the team, not a framework. No lint rule enforces the dependency direction yet.</p>
+<p><strong>Reconsider when:</strong> A second feature is added that would benefit from shared infrastructure across features, or the team grows past a size where informal boundary discipline holds.</p>
+<hr class="divider" />
+<h2>ADR-002 — Data Consistency, Versioning, and Concurrency</h2>
+<p><strong>Decision summary:</strong> Immutable full-snapshot campaign versions; approval bound to the exact version reviewed; optimistic concurrency via a version token, checked twice (once for staleness, once for write conflicts).</p>
+<p><strong>Why this approach:</strong> Post-approval drift — approving v1, scheduling v2 — is the single most damaging failure mode this system must prevent, and it must be prevented structurally, not by discipline. Optimistic concurrency fits a workflow where a reviewer might hold a campaign open for minutes or hours; pessimistic locks would freeze the system for that entire window.</p>
+<p><strong>Alternatives rejected:</strong> In-place mutation (no protection against drift at all); event-sourcing diffs (reconstruction complexity not justified at this scale); pessimistic locking (impractical hold times); two-phase commit (no distributed nodes to coordinate).</p>
+<p><strong>Technical trade-offs:</strong> No automatic merge on conflict — the second writer must reload and resubmit. Full snapshots cost more storage than diffs; accepted because campaign payloads are small.</p>
+<p><strong>Limitations:</strong> A true simultaneous race (not a retry-after-success) is not fully closed by this mechanism alone; a formal idempotency-key scheme is a related, separate, and not-yet-designed concern.</p>
+<p><strong>Reconsider when:</strong> Write contention becomes frequent enough that "reload and retry" becomes a real user-experience problem, or if the requirements baseline's per-stage approval model (ADR-006) is adopted, which would extend this to multiple approval records per version.</p>
+<hr class="divider" />
+<h2>ADR-003 — Event Processing</h2>
+<p><strong>Decision summary:</strong> In-process domain events, emitted only after a transaction commits, consumed asynchronously by a notification adapter whose failures are never surfaced back to the triggering operation.</p>
+<p><strong>Why this approach:</strong> The ordering — emit after commit, never before — is what structurally guarantees a notification outage cannot roll back an already-durable state change. No broker is justified: there is exactly one consumer in a single process.</p>
+<p><strong>Alternatives rejected:</strong> Synchronous inline notification dispatch (couples an external service's reliability to a core business transaction); external message broker (operational overhead with no distributed consumers to justify it).</p>
+<p><strong>Technical trade-offs:</strong> Retry/backoff logic is hand-built rather than broker-provided. No durable outbox table exists — an in-flight notification can be lost if the process terminates before delivery.</p>
+<p><strong>Limitations:</strong> This mechanism only works because everything runs in one process; it would need redesign if a real backend were introduced.</p>
+<p><strong>Reconsider when:</strong> The architecture gains a backend (ADR-006), at which point a durable, database-backed outbox becomes both possible and arguably necessary.</p>
+<hr class="divider" />
+<h2>ADR-004 — Authorization Boundary and No-Backend Deployment</h2>
+<p><strong>Decision summary:</strong> Role and self-review checks enforced in Application and Domain code, on-device; explicitly documented as not satisfying a literal server-side-enforcement reading of the requirements, because there is no server.</p>
+<p><strong>Why this approach:</strong> Given no backend exists in this deliverable, the technical strength of on-device enforcement is the same whether or not the gap is disclosed — the only real choice was whether to state it. Stating it is both more honest and, in an architecture review, more defensible than having a reviewer discover an unstated gap.</p>
+<p><strong>Alternatives rejected:</strong> Building a minimal real backend for the hackathon deliverable (materially larger scope, disproportionate to team size and timeline — a decision this ADR does not reopen, but that ADR-006 revisits as one explicit resolution path).</p>
+<p><strong>Technical trade-offs:</strong> A modified client binary could, in principle, bypass on-device checks. This is the central, named limitation of the architecture as it stands.</p>
+<p><strong>Limitations:</strong> Not production-ready from a security standpoint against adversarial users without a backend.</p>
+<p><strong>Reconsider when:</strong> The project moves toward production deployment, or the team resolves ADR-006 in favor of introducing a real backend.</p>
+<hr class="divider" />
+<h2>ADR-005 — Persistence Strategy</h2>
+<p><strong>Decision summary:</strong> Local-first persistence via Drift over SQLite; no remote database or backend API.</p>
+<p><strong>Why this approach:</strong> A direct consequence of ADR-004 — with no backend, a remote database was never a live option. Among local choices, Drift's relational model fits the domain's actual shape (campaign → versions → approvals → audit) better than an object-store, with meaningfully less defect risk than raw SQL for a two-person team.</p>
+<p><strong>Alternatives rejected:</strong> Raw SQLite (more hand-written SQL, more defect surface); Isar (weaker fit for relational joins); backend API + managed database (contradicts ADR-004).</p>
+<p><strong>Technical trade-offs:</strong> No cross-device synchronization — a hard limitation, not an oversight. No backup/restore infrastructure beyond on-device crash-safety.</p>
+<p><strong>Limitations:</strong> Single-tenant only; no disaster-recovery story beyond what SQLite's WAL mode provides.</p>
+<p><strong>Reconsider when:</strong> Multi-device support becomes a real requirement, or ADR-006 resolves toward a server-backed data model.</p>
+<hr class="divider" />
+<h2>ADR-006 — The Unresolved Reconciliation</h2>
+<p><strong>Decision summary:</strong> Not a decision — a documented conflict. The requirements baseline (updated after the Solution Design was built) now specifies a three-stage sequential approval pipeline with server-side, database-backed enforcement; the current Solution Design implements a single-approval, local-first, no-backend architecture. Neither has been changed to match the other.</p>
+<p><strong>Why this is presented, not hidden:</strong> Discovering and disclosing this during architecture-decision documentation is itself evidence of a working review process. The alternative — silently picking one side while writing the rest of the documentation as if it were already resolved — would be a materially worse failure than the discrepancy itself.</p>
+<p><strong>What it costs to acknowledge:</strong> It invites the hardest questions a judge can ask. <code>anticipated-questions.md</code> prepares direct, non-evasive answers for exactly that.</p>
+<p><strong>Reconsider when:</strong> Immediately — before final submission, ADR-006 recommends the team explicitly choose one of its three documented resolution paths (extend the architecture, re-scope the requirements, or present a clearly-separated MVP/target-state narrative).</p>
+
+<div class="page-break"></div>
+
+<!-- SECTION 9: TRACEABILITY MATRIX -->
+<h1>Section 9: Requirements &amp; Architecture Traceability Matrix</h1>
+<div class="callout-black">
+  <strong>Source:</strong> <code>docs/07-quality-attributes/traceability.md</code> &bull; Comprehensive end-to-end forward and backward traceability mapping requirements to ADRs, domain entities, and quality attributes.
+</div>
+<h1>Requirements, Architecture & Verification Traceability Matrix</h1>
+<div class="callout-green"><strong>Document Status:</strong> Approved v1.0 <strong>Last Updated:</strong> 2026-11-01 <strong>Owner:</strong> Domain Research & Requirements Lead <strong>Traces to:</strong> All sections in <code>docs/01-problem-understanding/</code>, <code>docs/04-workflows/</code>, <code>docs/06-data-design/</code>, and <code>docs/07-quality-attributes/</code></div>
+<hr class="divider" />
+<h2>1. Executive Summary & Traceability Governance</h2>
+<p>This Traceability Matrix serves as the single source of truth connecting business drivers, functional capabilities, quality attribute requirements, data design entities, workflows, and test verification methods for the <strong>MAL4 MarTech Campaign Review & Approval Platform</strong>.</p>
+<p>It provides complete forward and backward traceability across the entire engineering lifecycle, directly addressing the MAL4 scoring dimensions:</p>
+<ul>
+<li><strong>Structure & boundaries (15%)</strong></li>
+<li><strong>Data & state management (15%)</strong></li>
+<li><strong>Testing & observability (15%)</strong></li>
+<li><strong>Failure & recovery handling (10%)</strong></li>
+<li><strong>Architecture defence (10%)</strong></li>
+</ul>
+<hr class="divider" />
+<h2>2. Functional Requirements Traceability Matrix (<code>FR-001</code> to <code>FR-019</code>)</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Req ID</th><th>Requirement Summary</th><th>Stakeholders</th><th>Owning Workflow</th><th>Domain Aggregate / DB Table</th><th>Quality Attribute</th><th>Verification Method</th></tr>
+</thead>
+<tbody>
+<tr><td><strong><code>FR-001</code></strong></td><td>Campaign Creation & Drafting</td><td><code>ST-001</code> (Marketer)</td><td><code>campaign-lifecycle.md</code> §4.1</td><td><code>Campaign</code> / <code>campaigns</code></td><td>Usability, Data Integrity</td><td>Unit test: <code>test_create_draft_campaign()</code></td></tr>
+<tr><td><strong><code>FR-002</code></strong></td><td>Campaign Parameter Editing</td><td><code>ST-001</code> (Marketer)</td><td><code>campaign-lifecycle.md</code> §2.1</td><td><code>Campaign</code> / <code>campaigns</code></td><td>Concurrency, OCC</td><td>Unit test: <code>test_concurrent_draft_edit()</code></td></tr>
+<tr><td><strong><code>FR-003</code></strong></td><td>Soft Archival / Deletion</td><td><code>ST-001</code>, <code>ST-003</code></td><td><code>campaign-lifecycle.md</code> §2.1</td><td><code>Campaign</code> / <code>campaigns</code></td><td>Auditability</td><td>DB test: soft delete preserves audit log</td></tr>
+<tr><td><strong><code>FR-004</code></strong></td><td>Submit Proposal for Review</td><td><code>ST-001</code> (Marketer)</td><td><code>user-journey-flow.mmd</code> Phase 1</td><td><code>CampaignSnapshot</code> / <code>campaign_snapshots</code></td><td>Security, Integrity</td><td>Integration test: <code>test_submit_locks_snapshot()</code></td></tr>
+<tr><td><strong><code>FR-005</code></strong></td><td>Withdraw Submission</td><td><code>ST-001</code> (Marketer)</td><td><code>approval-workflow.md</code> §4</td><td><code>Campaign</code> / <code>campaigns</code></td><td>Consistency</td><td>Integration test: <code>test_withdraw_before_review()</code></td></tr>
+<tr><td><strong><code>FR-006</code></strong></td><td>Multi-Stage Review Progression</td><td><code>ST-002a</code>, <code>ST-002b</code></td><td><code>approval-workflow.md</code> §3</td><td><code>StageApproval</code> / <code>stage_approvals</code></td><td>Reliability, Security</td><td>Integration test: <code>test_stage1_to_stage2_advance()</code></td></tr>
+<tr><td><strong><code>FR-007</code></strong></td><td>Finance Sign-off / Full Approval</td><td><code>ST-002c</code> (Finance)</td><td><code>approval-workflow.md</code> §3.3</td><td><code>StageApproval</code> / <code>campaigns</code></td><td>Compliance, Auditability</td><td>Integration test: <code>test_stage3_final_approval()</code></td></tr>
+<tr><td><strong><code>FR-008</code></strong></td><td>Rejection Decision</td><td><code>ST-002a/b/c</code></td><td><code>approval-workflow.md</code> §3.5</td><td><code>ReviewDecision</code> / <code>review_decisions</code></td><td>Governance</td><td>Integration test: <code>test_rejection_terminates_cycle()</code></td></tr>
+<tr><td><strong><code>FR-009</code></strong></td><td>Request Changes Decision</td><td><code>ST-002a/b/c</code></td><td><code>approval-workflow.md</code> §3.4</td><td><code>ReviewDecision</code> / <code>review_decisions</code></td><td>Usability, Integrity</td><td>Integration test: <code>test_request_changes_attaches_notes()</code></td></tr>
+<tr><td><strong><code>FR-010</code></strong></td><td>Campaign Revision & Resubmission</td><td><code>ST-001</code> (Marketer)</td><td><code>revision-workflow.md</code> §2.1</td><td><code>CampaignSnapshot</code> (<span class="math">vN+1</span>)</td><td>Traceability, Integrity</td><td>Integration test: <code>test_resubmit_creates_v2_resets_stage1()</code></td></tr>
+<tr><td><strong><code>FR-011</code></strong></td><td>Feedback Visibility & Diffing</td><td><code>ST-001</code>, <code>ST-002a/b/c</code></td><td><code>revision-workflow.md</code> §5</td><td><code>ReviewDecision</code> / UI</td><td>Usability, Observability</td><td>UI test: structured field diff rendering</td></tr>
+<tr><td><strong><code>FR-012</code></strong></td><td>Scheduling Gate Enforcement</td><td><code>ST-001</code>, <code>ST-003</code></td><td><code>campaign-lifecycle.md</code> §4.8</td><td><code>Campaign</code> / <code>campaigns</code></td><td>Security, Governance</td><td>Integration test: <code>test_scheduling_gate_verifies_signatures()</code></td></tr>
+<tr><td><strong><code>FR-013</code></strong></td><td>Immutable Version Snapshots</td><td><code>ST-001</code>, <code>ST-002a/b/c</code></td><td><code>revision-workflow.md</code> §3</td><td><code>CampaignSnapshot</code> / <code>campaign_snapshots</code></td><td>Cryptographic Integrity</td><td>Unit test: <code>test_snapshot_sha256_immutable()</code></td></tr>
+<tr><td><strong><code>FR-014</code></strong></td><td>Material Change Invalidation</td><td><code>ST-001</code>, <code>ST-005</code></td><td><code>revision-workflow.md</code> §4</td><td><code>Campaign</code> / <code>stage_approvals</code></td><td>Compliance, SOX 404</td><td>Integration test: <code>test_budget_increase_invalidates_approval()</code></td></tr>
+<tr><td><strong><code>FR-015</code></strong></td><td>Immutable Audit Logging</td><td><code>ST-003</code>, <code>ST-005</code></td><td><code>observability.md</code> §6</td><td><code>audit_log</code> (Partitioned)</td><td>Auditability, Non-Repudiation</td><td>DB test: <code>INSERT</code> succeeds; <code>UPDATE</code>/<code>DELETE</code> blocked</td></tr>
+<tr><td><strong><code>FR-016</code></strong></td><td>Approval History Timeline</td><td><code>ST-002</code>, <code>ST-003</code></td><td><code>observability.md</code> §6</td><td><code>audit_log</code> / Query Engine</td><td>Observability</td><td>API test: query full timeline by <code>campaign_id</code></td></tr>
+<tr><td><strong><code>FR-017</code></strong></td><td>Role-Based Access Control</td><td>All Stakeholders</td><td><code>security.md</code> §3</td><td><code>users</code> / RBAC Middleware</td><td>Security</td><td>Security test: Marketer blocked from <code>/approve</code></td></tr>
+<tr><td><strong><code>FR-018</code></strong></td><td>Anti-Self-Approval Enforcement</td><td><code>ST-001</code>, <code>ST-002</code></td><td><code>security.md</code> §4</td><td>Domain Aggregate + DB Trigger</td><td>Compliance, SOX 404</td><td>Unit + DB test: Submitter blocked from self-review</td></tr>
+<tr><td><strong><code>FR-019</code></strong></td><td>Decoupled Lifecycle Notifications</td><td>All Stakeholders</td><td><code>failure-recovery.md</code> §3.2</td><td><code>outbox_events</code> / Dispatcher</td><td>Reliability, Resilience</td><td>Chaos test: Outbox succeeds during FCM outage</td></tr>
+</tbody>
+</table></div>
+<hr class="divider" />
+<h2>3. Non-Functional Requirements Traceability Matrix (<code>NFR-001</code> to <code>NFR-017</code>)</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>NFR ID</th><th>Category</th><th>Requirement</th><th>Target Metric / Bound</th><th>Implementation Mechanism</th><th>Traceable Documents</th></tr>
+</thead>
+<tbody>
+<tr><td><strong><code>NFR-001</code></strong></td><td>Consistency</td><td>Approval State Consistency</td><td>Zero split-brain states</td><td>Database-level Optimistic Concurrency Control on <code>(version, stage_index)</code></td><td><span class="doc-link"><code>reliability.md</code></span> §3.3, <span class="doc-link"><code>campaign-lifecycle.md</code></span> §5</td></tr>
+<tr><td><strong><code>NFR-002</code></strong></td><td>Consistency</td><td>Version-Approval Binding</td><td>100% cryptographic binding</td><td>SHA-256 snapshot hash verification at scheduling gate</td><td><span class="doc-link"><code>security.md</code></span> §5.2, <span class="doc-link"><code>revision-workflow.md</code></span> §3</td></tr>
+<tr><td><strong><code>NFR-003</code></strong></td><td>Consistency</td><td>Concurrent Edit Safety</td><td>Zero lost updates</td><td>Version token check (<code>WHERE version = :expected</code>)</td><td><span class="doc-link"><code>reliability.md</code></span> §3.3, <span class="doc-link"><code>failure-recovery.md</code></span> §3.3</td></tr>
+<tr><td><strong><code>NFR-004</code></strong></td><td>Reliability</td><td>Operation Idempotency</td><td>100% duplicate-free execution</td><td>Client-generated UUID <code>Idempotency-Key</code> header with 24h TTL</td><td><span class="doc-link"><code>reliability.md</code></span> §2, <span class="doc-link"><code>failure-recovery.md</code></span> §3.1</td></tr>
+<tr><td><strong><code>NFR-005</code></strong></td><td>Reliability</td><td>Partial Failure Recovery</td><td>100% blast-radius isolation</td><td>Transactional Outbox pattern with exponential backoff & DLQ</td><td><span class="doc-link"><code>reliability.md</code></span> §3.1, <span class="doc-link"><code>event-catalog.md</code></span> §4</td></tr>
+<tr><td><strong><code>NFR-006</code></strong></td><td>Reliability</td><td>System Availability</td><td>99.9% uptime</td><td>Multi-AZ stateless API containers, PgBouncer, automated DB failover</td><td><span class="doc-link"><code>reliability.md</code></span> §4</td></tr>
+<tr><td><strong><code>NFR-007</code></strong></td><td>Reliability</td><td>Duplicate Scheduling Guard</td><td>Zero duplicate dispatches</td><td>Atomic state transition <code>APPROVED -> SCHEDULED</code> on OCC</td><td><span class="doc-link"><code>campaign-lifecycle.md</code></span> §4.8</td></tr>
+<tr><td><strong><code>NFR-008</code></strong></td><td>Security</td><td>User Authentication</td><td>Zero unauthenticated writes</td><td>OAuth 2.0 / OIDC JWT validation via asymmetric RS256</td><td><span class="doc-link"><code>security.md</code></span> §2</td></tr>
+<tr><td><strong><code>NFR-009</code></strong></td><td>Security</td><td>Authorisation Enforcement</td><td>Zero unauthorized state actions</td><td>Server-side RBAC middleware evaluating role-to-stage permissions</td><td><span class="doc-link"><code>security.md</code></span> §3</td></tr>
+<tr><td><strong><code>NFR-010</code></strong></td><td>Security</td><td>Self-Review Prevention</td><td>100% SoD enforcement</td><td>Tri-layer barrier: API Guard, Domain Invariant, Database Trigger</td><td><span class="doc-link"><code>security.md</code></span> §4</td></tr>
+<tr><td><strong><code>NFR-011</code></strong></td><td>Security</td><td>Tenant Isolation</td><td>Zero cross-tenant data leakage</td><td>Logical tenant discriminator (<code>tenant_id</code>) & row-level security</td><td><span class="doc-link"><code>security.md</code></span> §2.1</td></tr>
+<tr><td><strong><code>NFR-012</code></strong></td><td>Auditability</td><td>Immutable Audit Trail</td><td>Append-only (Zero update/delete)</td><td>PostgreSQL declarative monthly partitioned table, restricted DDL</td><td><span class="doc-link"><code>observability.md</code></span> §6, <span class="doc-link"><code>database-schema.md</code></span> §2.6</td></tr>
+<tr><td><strong><code>NFR-013</code></strong></td><td>Auditability</td><td>Audit Retention</td><td>12 months minimum (WORM ready)</td><td>Range partitioning by month; immutable cold-storage archival</td><td><span class="doc-link"><code>observability.md</code></span> §6</td></tr>
+<tr><td><strong><code>NFR-014</code></strong></td><td>Performance</td><td>Request Response Time</td><td>Read <span class="math">< 120\text{ms}</span>; Write <span class="math">< 250\text{ms}</span></td><td>Partial B-tree indexes, immutable snapshot Redis caching</td><td><span class="doc-link"><code>scalability.md</code></span> §2.2, §4.1</td></tr>
+<tr><td><strong><code>NFR-015</code></strong></td><td>Scalability</td><td>Workload Scalability</td><td>5–50 concurrent users (<span class="math">10\times</span> headroom)</td><td>Stateless horizontal API pods, PgBouncer connection pooling</td><td><span class="doc-link"><code>scalability.md</code></span> §2.1, §3</td></tr>
+<tr><td><strong><code>NFR-016</code></strong></td><td>Observability</td><td>Diagnostic Logging</td><td>100% structured JSON logs</td><td>Single-line JSON with correlation IDs, version, stage, actor, outcome</td><td><span class="doc-link"><code>observability.md</code></span> §3</td></tr>
+<tr><td><strong><code>NFR-017</code></strong></td><td>Observability</td><td>Health Monitoring</td><td>Automated probe detection</td><td><code>/health/liveness</code>, <code>/health/readiness</code> (DB & Outbox backlog checks)</td><td><span class="doc-link"><code>observability.md</code></span> §7.1</td></tr>
+</tbody>
+</table></div>
+<hr class="divider" />
+<h2>4. Architectural Decisions to Quality Attributes Mapping</h2>
+<div class="table-container"><table>
+<thead>
+<tr><th>Architectural Decision</th><th>Addressed Problem / Goal</th><th>Direct Quality Attribute Beneficiary</th><th>Rejected Alternative & Justification</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>AD-01: Multi-Level Sequential Pipeline</strong></td><td>Conflating creative, legal, and financial approvals violates SOX 404 & FINRA 2210.</td><td><strong>Security (<code>NFR-009</code>, <code>NFR-010</code>), Compliance, Reliability</strong></td><td><em>Single-Gate Pool:</em> Fails regulatory audits.<br/><em>Dynamic BPMN Engine:</em> <span class="badge badge-black">High</span> failure overhead.</td></tr>
+<tr><td><strong>AD-02: Material Change Invalidation Engine</strong></td><td>Post-approval drift where approved v1 copy is altered before release.</td><td><strong>Consistency (<code>NFR-002</code>), Governance (<code>FR-014</code>)</strong></td><td><em>Any-Edit Invalidation:</em> Paralyzes marketing agility.<br/><em>Silent Mutation:</em> Disastrous legal exposure.</td></tr>
+<tr><td><strong>AD-03: Immutable Full Snapshot Algebra (<span class="math">vN</span>)</strong></td><td>Delta diff reconstruction lag and state corruption on mobile devices.</td><td><strong>Performance (<code>NFR-014</code>), Auditability (<code>NFR-012</code>)</strong></td><td><em>Incremental Event Sourcing Diffs:</em> Projection lag and reconstruction drift on mobile.</td></tr>
+<tr><td><strong>AD-04: Optimistic Concurrency Control (OCC)</strong></td><td>Mobile connection drops holding database locks freeze reviewers.</td><td><strong>Reliability (<code>NFR-001</code>, <code>NFR-003</code>), Scalability</strong></td><td><em>Pessimistic Row Locking (<code>SELECT FOR UPDATE</code>):</em> Deadlocks and connection pool starvation.</td></tr>
+<tr><td><strong>AD-05: Transactional Outbox Pattern</strong></td><td>Downstream push notification (FCM) timeouts aborting business approvals.</td><td><strong>Reliability (<code>NFR-005</code>), Availability (<code>NFR-006</code>)</strong></td><td><em>Synchronous RPC / Dual-Write:</em> <span class="badge badge-black">High</span> latency, phantom alerts, partial failures.</td></tr>
+<tr><td><strong>AD-06: Tri-Layer Anti-Self-Approval Enforcement</strong></td><td>Submitting marketers attempting self-authorization of ad campaigns.</td><td><strong>Security (<code>NFR-010</code>), Compliance (SOX 404)</strong></td><td><em>Client-Only UI Hiding:</em> Easily bypassed via curl.<br/><em>Configurable Policy:</em> Invites social engineering.</td></tr>
+</tbody>
+</table></div>
+<hr class="divider" />
+<h2>5. MAL4 Evaluation Rubric Coverage</h2>
+<pre class="code-block language-mermaid"><code>pie title MAL4 Hackathon Scoring Weight Allocation
+    "Architecture &amp; Structure" : 60
+    "Testing &amp; Observability" : 15
+    "Working User Journey (Mobile)" : 15
+    "Architecture Defence &amp; Trade-offs" : 10</code></pre>
+<div class="table-container"><table>
+<thead>
+<tr><th>MAL4 Rubric Dimension</th><th>Weight</th><th>Primary Architectural Documents Proving Compliance</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Structure & Boundaries</strong></td><td><strong>15%</strong></td><td><span class="doc-link"><code>domain-model.md</code></span>, <span class="doc-link"><code>database-schema.md</code></span>, <span class="doc-link"><code>user-journey-flow.mmd</code></span></td></tr>
+<tr><td><strong>Data & State Management</strong></td><td><strong>15%</strong></td><td><span class="doc-link"><code>campaign-lifecycle.md</code></span>, <span class="doc-link"><code>revision-workflow.md</code></span>, <span class="doc-link"><code>database-schema.md</code></span></td></tr>
+<tr><td><strong>Testing & Observability</strong></td><td><strong>15%</strong></td><td><span class="doc-link"><code>observability.md</code></span>, <span class="doc-link"><code>traceability.md</code></span>, structured JSON logs, Prometheus metrics</td></tr>
+<tr><td><strong>Failure & Recovery Handling</strong></td><td><strong>10%</strong></td><td><span class="doc-link"><code>reliability.md</code></span>, <span class="doc-link"><code>failure-recovery.md</code></span>, Transactional Outbox, DLQ, Idempotency</td></tr>
+<tr><td><strong>Trade-offs & Adaptability</strong></td><td><strong>10%</strong></td><td>Paired trade-offs across all sections, <span class="doc-link"><code>trade-offs.md</code></span></td></tr>
+<tr><td><strong>Problem Framing & Scope</strong></td><td><strong>10%</strong></td><td><span class="doc-link"><code>problem-statement.md</code></span>, <span class="doc-link"><code>stakeholders.md</code></span></td></tr>
+<tr><td><strong>Working User Journey (Mobile)</strong></td><td><strong>15%</strong></td><td>Mobile-first journey, structured field diffs, offline drafting, idempotency retry tokens</td></tr>
+<tr><td><strong>Architecture Defence</strong></td><td><strong>10%</strong></td><td>Systematic defense of chosen approaches vs. rejected alternatives across all 01–07 documents</td></tr>
+</tbody>
+</table></div>
+
+</body>
+</html>

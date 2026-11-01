@@ -1,0 +1,25 @@
+name: mal4_campaign_approval_app
+description: "MAL4 MarTech Campaign Review & Approval Platform - Mobile Prototype"
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  intl: ^0.19.0
+  uuid: ^4.4.0
+  crypto: ^3.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+

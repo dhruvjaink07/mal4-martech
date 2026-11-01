@@ -119,9 +119,15 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
     │   └── component-responsibilities.md      # Ownership matrices, dependencies, cohesion
     │
     ├── 03-architecture-decisions/             # Architecture Decision Records (ADRs)
-    │   ├── ADR-001-architecture-style.md      # Modular Monolith vs Microservices vs Mobile-Local
+    │   ├── README.md                          # ADR Index & Decision Relationship Architecture
+    │   ├── ADR-001-architecture-style.md      # Modular Monolith vs Microservices vs Clean-Lite
     │   ├── ADR-002-data-consistency.md        # Concurrency control & version snapshot model
-    │   └── ADR-003-event-processing.md        # Sync write-path vs async side-effects & notifications
+    │   ├── ADR-003-event-processing.md        # In-process domain events vs external broker
+    │   ├── ADR-004-authorization-and-deployment-boundary.md # On-device RBAC & no-backend boundary
+    │   ├── ADR-005-persistence-strategy.md    # Local-first persistence (Drift over SQLite)
+    │   ├── ADR-006-multistage-approval-backend-reconciliation.md # Multi-stage & backend reconciliation
+    │   ├── MAL4-ADR.html                      # Publication-grade print HTML deliverable
+    │   └── MAL4-ADR.pdf                       # Vector PDF deliverable (Strict Red, Green, Black palette)
     │
     ├── 04-workflows/                          # Detailed Workflow & Recovery Specs
     │   ├── user-journey-flow.mmd              # User journey swimlane flow diagram & operational spec
@@ -130,12 +136,19 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
     │   ├── revision-workflow.md               # Change-detection, diffing, re-approval rules
     │   └── failure-recovery.md                # Idempotency, network drop recovery, retry policies
     │
-    ├── 05-diagrams/                           # C4 & Flow Visualizations (Mermaid)
+    ├── 05-diagrams/                           # C4 & Flow Visualizations (Mermaid & Rendered PNGs)
     │   ├── system-context.mmd                 # C4 Level 1 Context Diagram
     │   ├── container-architecture.mmd         # C4 Level 2 Container Diagram
+    │   ├── logical-architecture.mmd           # Clean Architecture layer decomposition
     │   ├── campaign-state-machine.mmd         # Finite State Machine diagram
-    │   ├── sequence-diagrams.mmd              # Review, Revision, and Scheduling sequences
-    │   └── deployment-architecture.mmd        # Topology, deployment boundaries, data tier
+    │   ├── approval-sequence.mmd              # Sequential review progression sequence
+    │   ├── revision-sequence.mmd              # Material change diff & revision sequence
+    │   ├── error-recovery-sequence.mmd        # OCC conflict & notification failure isolation
+    │   ├── data-flow.mmd                      # End-to-end data pipelines & audit write path
+    │   ├── deployment-architecture.mmd        # Topology, deployment boundaries, data tier
+    │   ├── class-diagram.mmd                  # Domain aggregate & value objects class diagram
+    │   ├── er-diagram.mmd                     # Relational schema ER diagram
+    │   └── rendered/                          # Pre-rendered PNG assets for embedding
     │
     ├── 06-data-design/                        # Data Architecture
     │   ├── domain-model.md                    # Aggregates, Entities, Value Objects, Invariants
@@ -146,12 +159,24 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
     │   ├── scalability.md                     # Bottlenecks, capacity planning, workload projections
     │   ├── reliability.md                     # SLOs, failure containment, outbox patterns
     │   ├── security.md                        # RBAC, tenant isolation, self-review guards
-    │   └── observability.md                   # Structured diagnostic logging, metrics, audit traces
+    │   ├── observability.md                   # Structured diagnostic logging, metrics, audit traces
+    │   └── traceability.md                    # Comprehensive forward/backward traceability matrix
     │
-    └── 08-architecture-defence/               # Hackathon Defense Preparation
-        ├── trade-offs.md                      # Systematic decision comparison matrix
-        ├── failure-scenarios.md               # Fault injection, edge cases, mitigation walkthroughs
-        └── anticipated-questions.md           # Anticipated jury questions with justified answers
+    ├── 08-architecture-defence/               # Hackathon Defense Preparation & Rehearsal
+    │   ├── README.md                          # Defense structure, scoring rubric & presentation flow
+    │   ├── architecture-overview.md           # Spoken elevator pitch & architecture executive summary
+    │   ├── critical-design-decisions.md       # Deep-dive defence of the 8 core design choices
+    │   ├── adr-defence.md                     # Rehearsed, cross-examination-ready notes for all ADRs
+    │   ├── trade-offs.md                      # Systematic decision comparison & rejected alternatives
+    │   ├── failure-scenarios.md               # Fault injection, edge cases, mitigation walkthroughs
+    │   ├── risks-and-limitations.md           # Honest accounting of stated boundaries & limitations
+    │   ├── anticipated-questions.md           # 30+ anticipated jury questions with justified answers
+    │   └── presentation-notes.md              # 10-minute panel presentation script & speaker cues
+    │
+    └── 09-architecture-deliverables/          # Publication-Grade Vector PDF Deliverables
+        ├── MAL4-HLD.pdf                       # High-Level Design (HLD) complete vector deliverable
+        ├── MAL4-LLD.pdf                       # Low-Level Design (LLD) complete vector deliverable
+        └── MAL4-ADR.pdf                       # Architecture Decision Records (ADRs) vector deliverable
 ```
 
 ---
@@ -162,10 +187,10 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
 |:---:|:---|:---|:---:|
 | **01** | **Domain Discovery & Requirements** | `problem-statement.md`, `stakeholders.md`, `functional-requirements.md`, `non-functional-requirements.md`, `README.md` | **Completed** |
 | **02** | **Core Domain Modelling & State Machine** | `user-journey-flow.mmd`, `campaign-lifecycle.md`, `domain-model.md` | **Completed** |
-| **03** | **Solution Architecture & ADRs** | `solution-overview.md`, `system-context.md`, `ADR-001`, `ADR-002`, `ADR-003`, C4 Diagrams | *Pending* |
+| **03** | **Solution Architecture & ADRs** | `MAL4-HLD.md`, `MAL4-LLD.md`, `ADR-001` through `ADR-006`, `MAL4-ADR.pdf`, 11 C4/Sequence Diagrams | **Completed** |
 | **04** | **Data Architecture & Workflows** | Workflows (`approval-workflow.md`, `revision-workflow.md`, `failure-recovery.md`); Data Schemas (`database-schema.md`, `event-catalog.md`) | **Completed** |
-| **05** | **Quality Attributes & Defense** | Quality Attributes Completed (`scalability.md`, `reliability.md`, `security.md`, `observability.md`, `traceability.md`, `trade-offs.md`); Defense scenarios pending (`failure-scenarios.md`, `anticipated-questions.md`) | *In Progress* |
-| **06** | **Working User Journey (Mobile)** | Scoped Flutter / Native mobile user journey demonstrating core review & recovery | *Pending* |
+| **05** | **Quality Attributes & Defense** | Quality Attributes (`scalability.md`, `reliability.md`, `security.md`, `observability.md`, `traceability.md`); Defense Suite (`trade-offs.md`, `critical-design-decisions.md`, `failure-scenarios.md`, `anticipated-questions.md`, `presentation-notes.md`) | **Completed** |
+| **06** | **Working User Journey (Mobile)** | Flutter app (`app/`) with 3-stage review pipeline, persona switcher, diff viewer, and 18 passing tests | **Completed** |
 
 ---
 

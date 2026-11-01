@@ -16,6 +16,7 @@
 | [`anticipated-questions.md`](anticipated-questions.md) | A 12-category judge question bank with direct answers, technical detail, and references. |
 | [`failure-scenarios.md`](failure-scenarios.md) | The spoken, narrative version of the project's failure-mode handling, for live Q&A. |
 | [`presentation-notes.md`](presentation-notes.md) | A section-by-section speaking guide for the live presentation. |
+| [`master-presentation-guide.md`](master-presentation-guide.md) | The master 10-minute presentation & defense script covering the One-Pager, HLD, LLD, ADRs, 2-speaker hand-offs, and top 6 jury trap responses. |
 
 ## The One Thing to Read First
 
