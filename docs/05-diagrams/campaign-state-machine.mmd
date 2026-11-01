@@ -1,4 +1,22 @@
-%% Campaign State Machine
+%% Campaign State Machine Diagram
+%% Traces to: docs/02-solution-design/LLD/workflow-state-machine.md
+%% Legend: labels are Command / Actor
 
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
 stateDiagram-v2
-    %% TODO: Define campaign states and transitions
+    [*] --> Draft : CreateCampaign / Marketer
+
+    Draft --> PendingReview : SubmitCampaign / Marketer
+    PendingReview --> Approved : ReviewCampaign(approve) / Reviewer
+    PendingReview --> Rejected : ReviewCampaign(reject) / Reviewer
+    PendingReview --> ChangesRequested : ReviewCampaign(requestChanges) / Reviewer
+    PendingReview --> Draft : WithdrawSubmission / Marketer
+
+    ChangesRequested --> PendingReview : ReviseCampaign / Marketer
+
+    Approved --> Scheduled : ScheduleCampaign / Marketer
+    Approved --> Draft : (material change, system-triggered)
+
+    Rejected --> Draft : RestartCampaign / Marketer
+
+    Scheduled --> [*] : terminal

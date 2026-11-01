@@ -1,0 +1,88 @@
+%% UML Class Diagram
+%% Traces to: docs/02-solution-design/LLD/domain-model.md, LLD/class-and-interface-design.md
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
+classDiagram
+    class Campaign {
+        -String id
+        -CampaignState _state
+        -int _currentVersion
+        -List~CampaignVersion~ _versions
+        -ApprovalRecord? _activeApproval
+        -String _submitterId
+        +submit(snapshot) Campaign
+        +withdraw() Campaign
+        +approve(reviewerId, versionBeingReviewed) Campaign
+        +reject(reviewerId, versionBeingReviewed, reason) Campaign
+        +requestChanges(reviewerId, versionBeingReviewed, feedback) Campaign
+        +reviseAndResubmit(snapshot) Campaign
+        +invalidateApprovalOnMaterialChange() Campaign
+        +schedule() Campaign
+    }
+
+    class CampaignVersion {
+        +int versionNumber
+        +String name
+        +String objective
+        +String targetAudience
+        +double budget
+        +DateTimeRange schedule
+        +List~String~ channels
+        +DateTime createdAt
+    }
+
+    class ApprovalRecord {
+        +String reviewerId
+        +ReviewDecision decision
+        +DateTime timestamp
+        +int versionReviewed
+        +String? feedback
+        +String? supersededByReason
+    }
+
+    class AuditEntry {
+        +String eventId
+        +DateTime timestampUtc
+        +String actorId
+        +String action
+        +String campaignId
+        +int version
+    }
+
+    class CampaignState {
+        <<enumeration>>
+        draft
+        pendingReview
+        changesRequested
+        approved
+        rejected
+        scheduled
+    }
+
+    class CampaignRepository {
+        <<interface>>
+        +load(campaignId) Campaign
+        +save(campaign, expectedVersion) Result
+    }
+
+    class AuditLogRepository {
+        <<interface>>
+        +append(entry) void
+        +queryBy(campaignId, actor, timeRange) List~AuditEntry~
+    }
+
+    class ReviewCampaign {
+        -CampaignRepository _campaigns
+        -AuditLogRepository _audit
+        -AuthProvider _auth
+        +execute(command) Result
+    }
+
+    Campaign "1" *-- "many" CampaignVersion : owns
+    Campaign "1" o-- "0..1" ApprovalRecord : activeApproval
+    Campaign --> CampaignState : state
+    ReviewCampaign ..> CampaignRepository : depends on
+    ReviewCampaign ..> AuditLogRepository : depends on
+    ReviewCampaign ..> Campaign : delegates to
+    CampaignRepository ..> Campaign : persists
+    AuditLogRepository ..> AuditEntry : persists

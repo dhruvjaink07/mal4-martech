@@ -1,0 +1,25 @@
+%% Error Recovery Sequence Diagram
+%% Scenario: state transition commits, notification fails (NFR-005)
+%% Traces to: docs/02-solution-design/HLD/reliability-architecture.md (scenario 7), LLD/error-handling.md
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif','actorFontSize':'15px','noteFontSize':'14px','messageFontSize':'14px'}}}%%
+sequenceDiagram
+    actor Reviewer
+    participant UC as ReviewCampaign
+    participant Repo as CampaignRepository
+    participant Audit as AuditLogRepository
+    participant Events as Domain Event Bus
+    participant Notify as NotificationGateway
+
+    Reviewer->>UC: execute(ReviewCommand: approve)
+    UC->>Repo: save(campaign, expectedVersion) [atomic: state + version + audit]
+    Repo-->>UC: Ok(void)
+    Note over Repo: Transaction committed - durable, visible to all readers now (NFR-001)
+    UC->>Audit: append(AuditEntry: approved)
+    UC->>Events: emit(CampaignApproved)
+    UC-->>Reviewer: Ok(Campaign) -- success, regardless of what happens next
+
+    Events->>Notify: notify(CampaignApproved)
+    Notify->>Notify: delivery attempt fails
+    Notify->>Notify: log failure, schedule retry (best-effort)
+    Note over Notify: Failure is NOT propagated back to UC or Reviewer (NFR-005). <br/>The already-committed state transition is never rolled back.

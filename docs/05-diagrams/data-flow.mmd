@@ -1,0 +1,22 @@
+%% Data Flow Diagram
+%% Traces to: docs/02-solution-design/HLD/data-architecture.md, LLD/concurrency-design.md
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}}}%%
+graph LR
+    Marketer(["Marketer"]) -->|"submit command"| UC1["SubmitCampaign<br/>use case"]
+    UC1 -->|"load (fresh)"| Repo[("CampaignRepository")]
+    UC1 -->|"delegate: submit()"| Agg["Campaign aggregate<br/>(in-memory)"]
+    Agg -->|"new CampaignVersion<br/>+ new state"| UC1
+    UC1 -->|"save(campaign, expectedVersion)"| Repo
+    Repo -->|"atomic transaction:<br/>state + version + audit"| DB[("Local DB")]
+    UC1 -->|"emit CampaignSubmitted<br/>(after commit)"| Events(["Domain Event Bus"])
+    Events -->|"best-effort, async"| NotifyGw["NotificationGateway"]
+    NotifyGw -.->|"never blocks write path - NFR-005"| Marketer
+
+    Reviewer(["Reviewer"]) -->|"review command +<br/>versionBeingReviewed"| UC2["ReviewCampaign<br/>use case"]
+    UC2 -->|"load (fresh, never cached)"| Repo
+    UC2 -->|"compare versionBeingReviewed<br/>vs currentVersion"| Agg
+    Agg -->|"StaleReviewError<br/>if mismatch"| UC2
+    UC2 -->|"save(campaign, expectedVersion)"| Repo
+    Repo -->|"ConcurrentModificationError<br/>if stored version advanced"| UC2
+    UC2 -->|"Result&lt;Campaign, DomainError&gt;"| Reviewer

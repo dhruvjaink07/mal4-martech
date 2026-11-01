@@ -1,0 +1,35 @@
+%% Campaign Revision Sequence Diagram
+%% Also illustrates the reconciled stale-approval scenario.
+%% Traces to: docs/02-solution-design/LLD/workflow-state-machine.md (Reconciling the Stale-Approval Scenario)
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif','actorFontSize':'15px','noteFontSize':'14px','messageFontSize':'14px'}}}%%
+sequenceDiagram
+    actor Marketer
+    actor Reviewer
+    participant Submit as SubmitCampaign
+    participant Withdraw as WithdrawSubmission
+    participant Revise as ReviseCampaign
+    participant Review as ReviewCampaign
+    participant Repo as CampaignRepository
+
+    Marketer->>Submit: execute(campaignId)
+    Submit->>Repo: save(campaign, v1, state=pendingReview)
+    Note over Reviewer: Reviewer opens v1 in their UI (no decision yet)
+
+    Marketer->>Withdraw: execute(campaignId)
+    Withdraw->>Repo: load(campaignId)
+    Repo-->>Withdraw: Campaign(v1, pendingReview, no ApprovalRecord)
+    Withdraw->>Repo: save(campaign, state=draft)
+
+    Marketer->>Revise: execute(campaignId, newSnapshot)
+    Revise->>Repo: load(campaignId)
+    Revise->>Repo: save(campaign, v2, state=pendingReview)
+
+    Note over Reviewer: Reviewer, unaware of the withdraw/resubmit, still holds v1
+
+    Reviewer->>Review: execute(ReviewCommand: approve, versionBeingReviewed=1)
+    Review->>Repo: load(campaignId)
+    Repo-->>Review: Campaign(currentVersion=2)
+    Review->>Review: compare 1 vs 2 -> mismatch
+    Review-->>Reviewer: Err(StaleReviewError(attempted=1, current=2))
+    Note over Reviewer: UI: "This campaign has changed since you opened it - please review the latest version."

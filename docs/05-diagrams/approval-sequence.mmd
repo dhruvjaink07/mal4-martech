@@ -1,0 +1,27 @@
+%% Approval Sequence Diagram
+%% Traces to: docs/02-solution-design/LLD/class-and-interface-design.md, LLD/version-management.md
+
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif','actorFontSize':'15px','noteFontSize':'14px','messageFontSize':'14px'}}}%%
+sequenceDiagram
+    actor Reviewer
+    participant UC as ReviewCampaign
+    participant Auth as AuthProvider
+    participant Repo as CampaignRepository
+    participant Agg as Campaign
+    participant Audit as AuditLogRepository
+    participant Events as Event Bus
+
+    Reviewer->>UC: approve(versionBeingReviewed=2)
+    UC->>Auth: currentUser()
+    Auth-->>UC: Reviewer identity
+    UC->>Repo: load(campaignId)
+    Repo-->>UC: Campaign(currentVersion=2)
+    UC->>Agg: approve(reviewerId, 2)
+    Agg->>Agg: check state, version, self-review
+    Agg-->>UC: Campaign(state=approved)
+    UC->>Repo: save(campaign, expectedVersion=2)
+    Repo-->>UC: Ok
+    UC->>Audit: append(AuditEntry: approved)
+    UC->>Events: emit(CampaignApproved)
+    UC-->>Reviewer: Ok(Campaign)
+    Events-->>Events: notify (async, best-effort, NFR-005)
