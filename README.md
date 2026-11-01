@@ -164,7 +164,7 @@ This repository hosts the complete architectural artifacts for a **Campaign Life
 | **02** | **Core Domain Modelling & State Machine** | `user-journey-flow.mmd`, `campaign-lifecycle.md`, `domain-model.md` | **Completed** |
 | **03** | **Solution Architecture & ADRs** | `solution-overview.md`, `system-context.md`, `ADR-001`, `ADR-002`, `ADR-003`, C4 Diagrams | *Pending* |
 | **04** | **Data Architecture & Workflows** | Workflows (`approval-workflow.md`, `revision-workflow.md`, `failure-recovery.md`); Data Schemas (`database-schema.md`, `event-catalog.md`) | **Completed** |
-| **05** | **Quality Attributes & Defense** | `scalability.md`, `reliability.md`, `security.md`, `observability.md`, `trade-offs.md`, `failure-scenarios.md`, `anticipated-questions.md` | *Pending* |
+| **05** | **Quality Attributes & Defense** | Quality Attributes Completed (`scalability.md`, `reliability.md`, `security.md`, `observability.md`, `traceability.md`, `trade-offs.md`); Defense scenarios pending (`failure-scenarios.md`, `anticipated-questions.md`) | *In Progress* |
 | **06** | **Working User Journey (Mobile)** | Scoped Flutter / Native mobile user journey demonstrating core review & recovery | *Pending* |
 
 ---
