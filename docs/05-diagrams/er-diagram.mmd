@@ -3,7 +3,7 @@
 %% separately in the project's data-design documentation. This diagram shows only the
 %% entity relationships established in the Low-Level Design's domain model.
 
-%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff','fontFamily':'Helvetica, Arial, sans-serif'}, 'er': {'entityPadding': 20, 'minEntityWidth': 170, 'fontSize': 15}}}%%
+%%{init: {'theme':'base', 'themeVariables': {'primaryColor':'#eef2f7','primaryBorderColor':'#0b2340','primaryTextColor':'#0b2340','lineColor':'#0b2340','secondaryColor':'#dde6f0','tertiaryColor':'#ffffff'}}}%%
 erDiagram
     CAMPAIGN ||--|{ CAMPAIGN_VERSION : "has versions"
     CAMPAIGN_VERSION ||--o| APPROVAL_RECORD : "may be reviewed by"

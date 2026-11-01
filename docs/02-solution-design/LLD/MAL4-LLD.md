@@ -736,7 +736,7 @@ Postcondition: the triggering use case's already-returned Result is never altere
 Error conditions: delivery failures are caught and never re-raised to the caller
 ```
 
-**Figure 6: Error Recovery Sequence** — `error-recovery-sequence.mmd`
+**Figure 3: Error Recovery Sequence** — `error-recovery-sequence.mmd`
 
 **F. Module Interfaces**
 
@@ -894,7 +894,7 @@ Internal: `Campaign` aggregate, `CampaignRepository`, `AuditLogRepository`, `Aut
 | Rejected | `RestartCampaign` | `CampaignRestarted` | None beyond state check | Draft | Marketer |
 | Scheduled | — | — | Terminal | — | — |
 
-**Figure 3: Campaign State Machine Diagram** — `campaign-state-machine.mmd`
+**Figure 4: Campaign State Machine Diagram** — `campaign-state-machine.mmd`
 
 Invalid transitions (illustrative): Draft→Approved, Draft→Scheduled, Pending Review→Scheduled, Scheduled→*(any)*, Rejected→Approved directly — all rejected via `InvalidTransitionError` inside the aggregate (5.2.4.C), never reached because of UI button-hiding alone.
 
@@ -912,7 +912,7 @@ Draft --SubmitCampaign--> PendingReview (v2)
                 Guard fails: 1 != 2 -> StaleReviewError
 ```
 
-**Figure 4: Campaign Revision / Version-Conflict Sequence** — `revision-sequence.mmd`
+**Figure 5: Campaign Revision / Version-Conflict Sequence** — `revision-sequence.mmd`
 
 ### 6.2 Campaign Version Management
 
@@ -930,7 +930,7 @@ function editApprovedCampaign(campaign, proposedEdit):
 
 Approval command, reviewer authorization, version validation, atomic persistence, audit recording, duplicate-action protection: all specified in §5.2.4 (class, algorithm, error, and test specs). **Transaction boundary:** exactly one local Drift transaction per `ReviewCampaign.execute()` call, covering the campaign-state update, the new `ApprovalRecord` write (implicit in the campaign row's embedded state or a joined row, depending on the final physical schema), and the `AuditEntry` insert — all three commit together or not at all.
 
-**Figure 5: Approval Transaction Sequence** — `approval-sequence.mmd`
+**Figure 6: Approval Transaction Sequence** — `approval-sequence.mmd`
 
 ### 6.4 Concurrent Modification
 
@@ -1006,10 +1006,10 @@ Every use case returns a `Result` rather than throwing for expected business fai
 |---|---|---|---|
 | Figure 1 | Conceptual Entity Relationship Diagram | Entity relationships only — physical schema is defined separately in the project's data-design documentation | §5.2.3 |
 | Figure 2 | UML Class Diagram | `Campaign` aggregate, value objects, repository interfaces, and `ReviewCampaign`'s dependencies | §5.2.4 |
-| Figure 3 | Campaign State Machine Diagram | Full transition table rendered as a state diagram | §6.1 |
-| Figure 4 | Campaign Revision / Version-Conflict Sequence | The reconciled stale-approval scenario, end to end | §6.1 |
-| Figure 5 | Approval Transaction Sequence | Full `ReviewCampaign.execute()` call sequence, including the atomic save and the post-commit event emission | §6.3 |
-| Figure 6 | Error Recovery Sequence | State commits, notification fails — NFR-005's isolation guarantee, shown as a sequence | §5.2.6 |
+| Figure 3 | Error Recovery Sequence | State commits, notification fails — NFR-005's isolation guarantee, shown as a sequence | §5.2.6 |
+| Figure 4 | Campaign State Machine Diagram | Full transition table rendered as a state diagram | §6.1 |
+| Figure 5 | Campaign Revision / Version-Conflict Sequence | The reconciled stale-approval scenario, end to end | §6.1 |
+| Figure 6 | Approval Transaction Sequence | Full `ReviewCampaign.execute()` call sequence, including the atomic save and the post-commit event emission | §6.3 |
 
 ---
 
